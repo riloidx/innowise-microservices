@@ -1,0 +1,117 @@
+services:
+  user-service-app:
+    build: ./user-service
+    ports:
+      - "${USER_SERVICE_APP_PORT}:8080"
+    depends_on:
+      - user-service-db
+      - user-service-redis
+    environment:
+      SPRING_PROFILES_ACTIVE: ${USER_SERVICE_SPRING_PROFILES_ACTIVE}
+      DB_URL: ${USER_SERVICE_DB_URL}
+      DB_USERNAME: ${USER_SERVICE_DB_USERNAME}
+      DB_PASSWORD: ${USER_SERVICE_DB_PASSWORD}
+
+  user-service-db:
+    image: postgres:15-alpine
+    restart: always
+    ports:
+      - "${USER_SERVICE_DB_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${USER_SERVICE_DB_NAME}
+      POSTGRES_USER: ${USER_SERVICE_DB_USERNAME}
+      POSTGRES_PASSWORD: ${USER_SERVICE_DB_PASSWORD}
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  user-service-redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "${USER_SERVICE_REDIS_PORT}:6379"
+
+  auth-service-app:
+    build: ./auth-service
+    ports:
+      - "${AUTH_SERVICE_APP_PORT}:8080"
+    depends_on:
+      - auth-service-db
+    environment:
+      DB_URL: ${AUTH_SERVICE_DB_URL}
+      DB_USERNAME: ${AUTH_SERVICE_DB_USERNAME}
+      DB_PASSWORD: ${AUTH_SERVICE_DB_PASSWORD}
+      JWT_ACCESS_KEY: ${JWT_ACCESS_KEY}
+      JWT_REFRESH_KEY: ${JWT_REFRESH_KEY}
+
+  auth-service-db:
+    image: postgres:15-alpine
+    restart: always
+    ports:
+      - "${AUTH_SERVICE_DB_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${AUTH_SERVICE_DB_NAME}
+      POSTGRES_USER: ${AUTH_SERVICE_DB_USERNAME}
+      POSTGRES_PASSWORD: ${AUTH_SERVICE_DB_PASSWORD}
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  order-service-app:
+    build: ./order-service
+    ports:
+      - "${ORDER_SERVICE_APP_PORT}:8080"
+    depends_on:
+      - order-service-db
+      - user-service-app
+    environment:
+      DB_URL: ${ORDER_SERVICE_DB_URL}
+      DB_USERNAME: ${ORDER_SERVICE_DB_USERNAME}
+      DB_PASSWORD: ${ORDER_SERVICE_DB_PASSWORD}
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      USER_SERVICE_TOKEN: ${USER_SERVICE_TOKEN}
+
+  order-service-db:
+    image: postgres:15-alpine
+    restart: always
+    ports:
+      - "${ORDER_SERVICE_DB_PORT}:5432"
+    environment:
+      POSTGRES_DB: ${ORDER_SERVICE_DB_NAME}
+      POSTGRES_USER: ${ORDER_SERVICE_DB_USERNAME}
+      POSTGRES_PASSWORD: ${ORDER_SERVICE_DB_PASSWORD}
+    volumes:
+      - order_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api-gateway-service:
+    build: ./api-gateway
+    ports:
+      - "${API_GATEWAY_SERVICE_APP_PORT}:8080"
+    environment:
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      ORDER_SERVICE_URL: ${ORDER_SERVICE_URL}
+      JWT_ACCESS_KEY: ${JWT_ACCESS_KEY}
+      JWT_REFRESH_KEY: ${JWT_REFRESH_KEY}
+    depends_on:
+      - user-service-app
+      - auth-service-app
+      - order-service-app
+
+volumes:
+  user_db_data:
+  auth_db_data:
+  order_db_data:
