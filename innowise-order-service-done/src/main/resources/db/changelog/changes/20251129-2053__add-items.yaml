@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-items-table
+      author: innowise-dev
+  - changeSet:
+      id: 20251128-2023-add-items
+      author: matvey
+      changes:
+        - insert:
+            tableName: items
+            columns:
+              - column: { name: name, value: "TV" }
+              - column: { name: price, valueNumeric: 2500.00 }
+              - column: { name: created_at, valueDate: current_timestamp }
+              - column: { name: updated_at, valueDate: current_timestamp }
+
+        - insert:
+            tableName: items
+            columns:
+              - column: { name: name, value: "Phone" }
+              - column: { name: price, valueNumeric: 999.99 }
+              - column: { name: created_at, valueDate: current_timestamp }
+              - column: { name: updated_at, valueDate: current_timestamp }
+
+        - insert:
+            tableName: items
+            columns:
+              - column: { name: name, value: "Fridge" }
+              - column: { name: price, valueNumeric: 3399.50 }
+              - column: { name: created_at, valueDate: current_timestamp }
+              - column: { name: updated_at, valueDate: current_timestamp }
+
+        - insert:
+            tableName: items
+            columns:
+              - column: { name: name, value: "Mouse" }
+              - column: { name: price, valueNumeric: 150.00 }
+              - column: { name: created_at, valueDate: current_timestamp }
+              - column: { name: updated_at, valueDate: current_timestamp }

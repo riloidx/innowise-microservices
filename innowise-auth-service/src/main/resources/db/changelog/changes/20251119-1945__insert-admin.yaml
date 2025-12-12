@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20251119-1945__insert-admin.yaml
+      author: matvey
+      changes:
+        - insert:
+            tableName: auth_credentials
+            columns:
+              - column:
+                  name: user_id
+                  value: 1
+              - column:
+                  name: login
+                  value: admin
+              - column:
+                  name: password_hash
+                  value: "$2a$10$hqBiOfmNJn3B2Q7DpJyoDOM36HmRtbq2zl5ddT2733NJWCYBliAPu" # 123123123
+              - column:
+                  name: role
+                  value: ADMIN

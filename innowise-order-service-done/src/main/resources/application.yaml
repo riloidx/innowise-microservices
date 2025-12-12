@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: innowise-order-service
+
+  datasource:
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/order_service_db}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+server:
+  servlet:
+    context-path: /api
+
+integration:
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8080}
+    token: ${USER_SERVICE_TOKEN}

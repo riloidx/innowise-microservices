@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: innowise-api-gateway
+
+  cloud:
+    gateway:

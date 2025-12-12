@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changes/20251125-1644__init-schemas.yaml
+  - include:
+      file: db/changelog/changes/20251129-2053__add-items.yaml
