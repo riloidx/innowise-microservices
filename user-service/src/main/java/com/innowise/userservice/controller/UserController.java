@@ -4,7 +4,6 @@ import com.innowise.userservice.dto.request.UserCreateDto;
 import com.innowise.userservice.dto.request.UserUpdateDto;
 import com.innowise.userservice.dto.response.UserResponseDto;
 import com.innowise.userservice.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +23,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or authentication.userId == #id")
+    @PreAuthorize("hasRole('ADMIN') or authentication.userId == #id")
     public ResponseEntity<UserResponseDto> getById(@PathVariable Long id) {
         UserResponseDto dto = userService.findDtoById(id);
 
@@ -32,7 +31,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponseDto>> findAll(@RequestParam(required = false) String name,
                                                          @RequestParam(required = false) String surname,
                                                          @RequestParam(required = false) LocalDate birthDate,
@@ -44,7 +43,7 @@ public class UserController {
     }
 
     @GetMapping("/email/{email}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDto> getByEmail(@PathVariable String email) {
         UserResponseDto dto = userService.findDtoByEmail(email);
 
@@ -60,7 +59,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or authentication.userId == #id")
+    @PreAuthorize("hasRole('ADMIN') or authentication.userId == #id")
     public ResponseEntity<UserResponseDto> update(@PathVariable Long id,
                                                   @RequestBody @Valid UserUpdateDto dto) {
         UserResponseDto updated = userService.update(id, dto);
@@ -69,7 +68,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.delete(id);
 
@@ -77,7 +76,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/activate")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDto> activate(@PathVariable Long id) {
         UserResponseDto updated = userService.changeStatus(id, true);
 
@@ -85,7 +84,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/deactivate")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDto> deactivate(@PathVariable Long id) {
         UserResponseDto updated = userService.changeStatus(id, false);
 

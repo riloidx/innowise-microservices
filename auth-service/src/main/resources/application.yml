@@ -13,10 +13,10 @@ spring:
 
 jwt:
   access:
-    key: ${JWT_ACCESS_KEY:6aec213d794e0cbd15a0bd961b21b2e6d74376ad897f8423939278479b20c7fb}
+    key: ${JWT_ACCESS_KEY}
     expiration-ms: ${JWT_ACCESS_EXPIRATION:900000} # 15 minutes
   refresh:
-    key: ${JWT_REFRESH_KEY:cde001b26cb22a86028a441d3c5b600a935a4606cd4b70aa03e5f679b5f2023d}
+    key: ${JWT_REFRESH_KEY}
     expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
 
 

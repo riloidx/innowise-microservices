@@ -26,7 +26,7 @@ public class PaymentCardController {
     private final PaymentCardService paymentCardService;
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or @paymentCardServiceImpl.getUserIdByCardId(#id) == authentication.userId")
+    @PreAuthorize("hasRole('ADMIN') or @paymentCardServiceImpl.getUserIdByCardId(#id) == authentication.userId")
     public ResponseEntity<PaymentCardResponseDto> getById(@PathVariable Long id) {
         PaymentCardResponseDto dto = paymentCardService.findDtoById(id);
 
@@ -34,7 +34,7 @@ public class PaymentCardController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or authentication.userId == #userId")
+    @PreAuthorize("hasRole('ADMIN') or authentication.userId == #userId")
     public ResponseEntity<List<PaymentCardResponseDto>> findAllCardsForUser(@PathVariable Long userId) {
         List<PaymentCardResponseDto> res = paymentCardService.findAllByUserId(userId);
 
@@ -42,7 +42,7 @@ public class PaymentCardController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Page<PaymentCardResponseDto>> findAll(
             @RequestParam(required = false) Boolean active,
             @RequestParam(value = "expires_after", required = false) LocalDate expiresAfter,
@@ -54,7 +54,7 @@ public class PaymentCardController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentCardResponseDto> create(@RequestBody @Valid PaymentCardCreateDto dto) {
         PaymentCardResponseDto created = paymentCardService.create(dto);
 
@@ -62,7 +62,7 @@ public class PaymentCardController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentCardResponseDto> update(@PathVariable Long id,
                                                          @RequestBody @Valid PaymentCardUpdateDto dto) {
         PaymentCardResponseDto updated = paymentCardService.update(id, dto);
@@ -71,7 +71,7 @@ public class PaymentCardController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         paymentCardService.delete(id);
 
@@ -79,7 +79,7 @@ public class PaymentCardController {
     }
 
     @PatchMapping("/{id}/activate")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentCardResponseDto> activate(@PathVariable Long id) {
         PaymentCardResponseDto updated = paymentCardService.changeStatus(id, true);
 
@@ -87,7 +87,7 @@ public class PaymentCardController {
     }
 
     @PatchMapping("/{id}/deactivate")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PaymentCardResponseDto> deactivate(@PathVariable Long id) {
         PaymentCardResponseDto updated = paymentCardService.changeStatus(id, false);
 
