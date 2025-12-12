@@ -6,4 +6,4 @@ spring:
 
   data:
     redis:
-      host: redis
+      host: user-service-redis

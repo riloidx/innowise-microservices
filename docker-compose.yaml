@@ -96,7 +96,7 @@ services:
       timeout: 5s
       retries: 5
 
-  api-gateway-service:
+  api-gateway-service-app:
     build: ./api-gateway
     ports:
       - "${API_GATEWAY_SERVICE_APP_PORT}:8080"
