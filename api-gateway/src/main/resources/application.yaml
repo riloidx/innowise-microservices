@@ -12,7 +12,7 @@ spring:
               predicates:
                 - Path=/api/users/**
               filters:
-                - AuthenticationFilter
+                - Authentication
 
             - id: auth-service-route
               uri: ${AUTH_SERVICE_URL}

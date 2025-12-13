@@ -43,7 +43,7 @@ public class JwtUtil {
     }
 
     private Key getKey(boolean isRefresh) {
-        String secret = isRefresh ? jwtProperties.getAccessKey() : jwtProperties.getRefreshKey();
+        String secret = isRefresh ? jwtProperties.getRefreshKey() : jwtProperties.getAccessKey();
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
