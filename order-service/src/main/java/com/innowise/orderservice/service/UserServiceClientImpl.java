@@ -1,14 +1,11 @@
 package com.innowise.orderservice.service;
 
-import com.innowise.orderservice.config.UserServiceProperties;
 import com.innowise.orderservice.dto.response.UserResponseDto;
 import com.innowise.orderservice.exception.ExternalUserNotFoundException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -18,7 +15,6 @@ import reactor.core.publisher.Mono;
 public class UserServiceClientImpl implements UserServiceClient {
 
     private final WebClient userServiceWebClient;
-    private final UserServiceProperties userServiceProperties;
 
 
     @Override
@@ -31,7 +27,7 @@ public class UserServiceClientImpl implements UserServiceClient {
                 .header("X-User-Id", "0")
                 .header("X-User-Role", "ADMIN")
                 .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError,  response -> {
+                .onStatus(HttpStatusCode::is4xxClientError, response -> {
                     if (response.statusCode().equals(HttpStatus.NOT_FOUND)) {
                         return Mono.error(new ExternalUserNotFoundException("id", String.valueOf(id)));
                     }
