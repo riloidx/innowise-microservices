@@ -28,7 +28,8 @@ public class UserServiceClientImpl implements UserServiceClient {
                 .uri(uri -> uri
                         .path("/api/users/{id}")
                         .build(id))
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + userServiceProperties.token())
+                .header("X-User-Id", "0")
+                .header("X-User-Role", "ADMIN")
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError,  response -> {
                     if (response.statusCode().equals(HttpStatus.NOT_FOUND)) {

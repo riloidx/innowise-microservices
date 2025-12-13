@@ -19,4 +19,5 @@ jwt:
     key: ${JWT_REFRESH_KEY}
     expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
 
-
+integration:
+  user-service-url: ${USER_SERVICE_URL}

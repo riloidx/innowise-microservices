@@ -51,7 +51,6 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponseDto> create(@RequestBody @Valid UserCreateDto dto) {
         UserResponseDto created = userService.create(dto);
 

@@ -4,7 +4,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.coyote.BadRequestException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,13 +25,12 @@ public class GatewayHeaderFilter extends OncePerRequestFilter {
         String userRole = request.getHeader("X-User-Role");
 
         if (userIdStr != null && userRole != null) {
-            UsernamePasswordAuthenticationToken auth = getUsernamePasswordAuthenticationToken(userIdStr, userRole);
-
-            SecurityContextHolder.getContext().setAuthentication(auth);
-        } else {
-            throw new BadRequestException("Missing X-User-Id or X-User-Role");
+            try {
+                UsernamePasswordAuthenticationToken auth = getUsernamePasswordAuthenticationToken(userIdStr, userRole);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            } catch (Exception e) {
+            }
         }
-
         filterChain.doFilter(request, response);
     }
 

@@ -47,6 +47,7 @@ services:
       DB_PASSWORD: ${AUTH_SERVICE_DB_PASSWORD}
       JWT_ACCESS_KEY: ${JWT_ACCESS_KEY}
       JWT_REFRESH_KEY: ${JWT_REFRESH_KEY}
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
 
   auth-service-db:
     image: postgres:15-alpine

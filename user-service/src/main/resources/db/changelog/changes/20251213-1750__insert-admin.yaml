@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20251213-1750-insert-admin
+      author: matvey
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: name
+                  value: admin
+              - column:
+                  name: surname
+                  value: admin
+              - column:
+                  name: birth_date
+                  valueDate: 2006-01-19
+              - column:
+                  name: email
+                  value: admin@gmail.com
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  valueComputed: CURRENT_TIMESTAMP
