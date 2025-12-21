@@ -7,6 +7,14 @@ spring:
     password: ${DB_PASSWORD:postgres}
     url: ${DB_URL:jdbc:postgresql://localhost:5432/order_service_db}
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: order-group
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
 resilience4j:
   circuitbreaker:
     instances:

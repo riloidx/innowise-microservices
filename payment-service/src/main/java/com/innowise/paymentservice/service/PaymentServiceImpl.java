@@ -6,6 +6,7 @@ import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.PaymentStatus;
 import com.innowise.paymentservice.exception.ExternalServiceException;
 import com.innowise.paymentservice.integration.RandomNumberClient;
+import com.innowise.paymentservice.kafka.event.PaymentEvent;
 import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.repository.PaymentRepository;
 import com.innowise.paymentservice.specification.PaymentSpecification;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,12 +27,20 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepo;
     private final PaymentMapper mapper;
     private final RandomNumberClient randomNumberClient;
+    private final KafkaTemplate<String, PaymentEvent> kafkaTemplate;
 
     @Override
     public PaymentResponseDto create(PaymentCreateDto paymentCreateDto) {
         Payment payment = preparePayment(paymentCreateDto);
+        Payment savedPayment = paymentRepo.save(payment);
 
-        return mapper.toDto(paymentRepo.save(payment));
+        PaymentEvent event = new PaymentEvent(
+                savedPayment.getOrderId(),
+                savedPayment.getStatus().name()
+        );
+        kafkaTemplate.send("payment-events", event);
+
+        return mapper.toDto(savedPayment);
     }
 
     @Override

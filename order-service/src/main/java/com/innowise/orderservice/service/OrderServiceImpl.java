@@ -104,6 +104,20 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    public void updateStatusFromPayment(long orderId, String paymentStatus) {
+        Order order = findById(orderId);
+
+        if (paymentStatus.equals("SUCCESS")) {
+            order.setStatus(OrderStatus.CONFIRMED);
+        } else {
+            order.setStatus(OrderStatus.CANCELED);
+        }
+
+        orderRepo.save(order);
+    }
+
+    @Override
+    @Transactional
     public OrderResponseDto delete(long id) {
         Order curOrder = findById(id);
 

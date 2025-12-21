@@ -30,5 +30,7 @@ public interface OrderService {
 
     OrderFullResponseDto update(long id, OrderUpdateDto order);
 
+    void updateStatusFromPayment(long orderId, String paymentStatus);
+
     OrderResponseDto delete(long id);
 }
