@@ -1,38 +1,39 @@
 package com.innowise.paymentservice.entity;
 
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "payments")
 @Getter
 @Setter
+@Document(collection = "payments")
 public class Payment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "order_id", nullable = false)
+    @Field("order_id")
+    @Indexed
     private Long orderId;
 
-    @Column(name = "user_id", nullable = false)
+    @Field("user_id")
+    @Indexed
     private Long userId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 64)
-    private PaymentStatus status = PaymentStatus.PENDING;
+    @Field("status")
+    private PaymentStatus status;
 
-    @CreationTimestamp
-    @Column(name = "timestamp", nullable = false, updatable = false)
+    @CreatedDate
+    @Field("timestamp")
     private Instant timestamp;
 
-    @Column(name = "payment_amount", nullable = false, precision = 10, scale = 2)
+    @Field("payment_amount")
     private BigDecimal paymentAmount;
 }
