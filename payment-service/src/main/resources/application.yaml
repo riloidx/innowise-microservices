@@ -3,8 +3,13 @@ spring:
     name: payment-service
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  servlet:
+    context-path: /api
+
 api:
   random-number-url: ${RANDOM_NUMBER_API_URL:https://csrng.net/csrng/csrng.php?min=1&max=100}
