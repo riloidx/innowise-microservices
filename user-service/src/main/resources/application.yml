@@ -23,3 +23,9 @@ jwt:
 server:
   servlet:
     context-path: /api
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true

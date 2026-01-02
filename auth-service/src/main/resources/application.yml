@@ -21,3 +21,9 @@ jwt:
 
 integration:
   user-service-url: ${USER_SERVICE_URL}
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true

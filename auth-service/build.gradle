@@ -9,7 +9,7 @@ ext {
 
 group = 'com.innowise'
 version = '0.0.1-SNAPSHOT'
-description = 'innowise-auth-service'
+description = 'auth-service'
 
 java {
     toolchain {
@@ -36,6 +36,7 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     implementation 'org.mapstruct:mapstruct:1.5.5.Final'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'org.postgresql:postgresql'
