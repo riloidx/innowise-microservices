@@ -10,12 +10,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -27,57 +25,53 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderFullResponseDto> create(@RequestBody @Valid OrderCreateDto orderCreateDto) {
-        OrderFullResponseDto response = orderService.create(orderCreateDto);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<OrderFullResponseDto> create(@RequestBody @Valid OrderCreateDto orderCreateDto) {
+        return orderService.create(orderCreateDto);
     }
 
     @GetMapping
-    public ResponseEntity<Page<OrderFullResponseDto>> findAll(
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Page<OrderFullResponseDto>> findAll(
             Pageable pageable,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(required = false) Boolean deleted,
             @RequestParam(required = false) LocalDate createdAfter,
             @RequestParam(required = false) LocalDate createdBefore
     ) {
-        Page<OrderFullResponseDto> response = orderService.findAll(pageable,
+        return orderService.findAll(
+                pageable,
                 status,
                 deleted,
                 createdAfter,
-                createdBefore);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+                createdBefore
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderFullResponseDto> findById(@PathVariable Long id) {
-        OrderFullResponseDto response = orderService.findDtoById(id);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<OrderFullResponseDto> findById(@PathVariable Long id) {
+        return orderService.findDtoById(id);
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<OrderFullResponseDto>> findByUserId(@PathVariable Long userId) {
-        List<OrderFullResponseDto> response = orderService.findByUserId(userId);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<List<OrderFullResponseDto>> findByUserId(@PathVariable Long userId) {
+        return orderService.findByUserId(userId);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<OrderFullResponseDto> update(
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<OrderFullResponseDto> update(
             @PathVariable Long id,
             @RequestBody @Valid OrderUpdateDto orderUpdateDto
     ) {
-        OrderFullResponseDto response = orderService.update(id, orderUpdateDto);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        return orderService.update(id, orderUpdateDto);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<OrderResponseDto> delete(@PathVariable Long id) {
-        OrderResponseDto response = orderService.delete(id);
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<OrderResponseDto> delete(@PathVariable Long id) {
+        return orderService.delete(id);
     }
 }
