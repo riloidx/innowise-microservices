@@ -15,7 +15,25 @@ api:
   random-number-url: ${RANDOM_NUMBER_API_URL:https://csrng.net/csrng/csrng.php?min=1&max=100}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, info, tracing
   endpoint:
     health:
       probes:
         enabled: true
+      show-details: always
+
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      type: b3
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
