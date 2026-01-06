@@ -12,22 +12,31 @@ import reactor.core.publisher.Mono;
 public class AuthenticationGatewayFilterFactory extends AbstractGatewayFilterFactory<AuthenticationGatewayFilterFactory.Config> {
 
     private final JwtUtil jwtUtil;
+    private final RouteValidator validator;
 
-    public AuthenticationGatewayFilterFactory(JwtUtil jwtUtil) {
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final int BEARER_PREFIX_LENGTH = BEARER_PREFIX.length();
+
+    public AuthenticationGatewayFilterFactory(JwtUtil jwtUtil, RouteValidator validator) {
         super(Config.class);
         this.jwtUtil = jwtUtil;
+        this.validator = validator;
     }
 
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
+            if (!validator.isSecured.test(exchange.getRequest())) {
+                return chain.filter(exchange);
+            }
+
             if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
                 return onError(exchange, "Missing authorization header");
             }
 
             String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                authHeader = authHeader.substring(7);
+            if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+                authHeader = authHeader.substring(BEARER_PREFIX_LENGTH);
             }
 
             try {
