@@ -15,6 +15,7 @@ import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.specification.PaymentCardSpecification;
 import com.innowise.userservice.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentCardServiceImpl implements PaymentCardService {
@@ -48,9 +50,12 @@ public class PaymentCardServiceImpl implements PaymentCardService {
                     @CacheEvict(value = "user", key = "#paymentCardCreateDto.userId")
             })
     public PaymentCardResponseDto create(PaymentCardCreateDto paymentCardCreateDto) {
+        log.info("Creating payment card for user ID: {}", paymentCardCreateDto.getUserId());
+        
         PaymentCard paymentCard = getValidatedCardForCreation(paymentCardCreateDto);
 
         PaymentCard savedCard = paymentCardRepo.save(paymentCard);
+        log.info("Payment card created successfully with ID: {}", savedCard.getId());
 
         return mapper.toDto(savedCard);
     }
@@ -64,10 +69,13 @@ public class PaymentCardServiceImpl implements PaymentCardService {
                     @CacheEvict(value = "cards", key = "#paymentCardUpdateDto.id")
             })
     public PaymentCardResponseDto update(long id, PaymentCardUpdateDto paymentCardUpdateDto) {
+        log.info("Updating payment card with ID: {}", id);
+        
         PaymentCard existingCard = getValidatedCardForUpdate(id, paymentCardUpdateDto);
 
         mapper.updateEntityFromDto(paymentCardUpdateDto, existingCard);
         PaymentCard updatedCard = paymentCardRepo.save(existingCard);
+        log.info("Payment card updated successfully with ID: {}", id);
 
         return mapper.toDto(updatedCard);
     }
@@ -80,9 +88,12 @@ public class PaymentCardServiceImpl implements PaymentCardService {
             @CacheEvict(value = "user", key = "@paymentCardServiceImpl.findById(#id).user.id", beforeInvocation = true),
     })
     public void delete(long id) {
+        log.info("Deleting payment card with ID: {}", id);
+        
         findById(id);
 
         paymentCardRepo.deleteById(id);
+        log.info("Payment card deleted successfully with ID: {}", id);
     }
 
     @Override
@@ -94,16 +105,24 @@ public class PaymentCardServiceImpl implements PaymentCardService {
                     @CacheEvict(value = "cards", key = "@paymentCardServiceImpl.findById(#id).user.id")
             })
     public PaymentCardResponseDto changeStatus(long id, boolean active) {
+        log.info("Changing payment card status - ID: {}, new status: {}", id, active ? "active" : "inactive");
+        
         PaymentCard card = getValidatedCardForChangingStatus(id, active);
 
         card = paymentCardRepo.save(card);
+        log.info("Payment card status changed successfully for ID: {}", id);
+        
         return mapper.toDto(card);
     }
 
     @Override
     public PaymentCard findById(long id) {
+        log.debug("Finding payment card by ID: {}", id);
         return paymentCardRepo.findById(id).
-                orElseThrow(() -> new PaymentCardNotFoundException("id", String.valueOf(id)));
+                orElseThrow(() -> {
+                    log.warn("Payment card not found with ID: {}", id);
+                    return new PaymentCardNotFoundException("id", String.valueOf(id));
+                });
     }
 
     @Override
@@ -118,11 +137,14 @@ public class PaymentCardServiceImpl implements PaymentCardService {
                                                 LocalDate expiresAfter,
                                                 LocalDate expiresBefore,
                                                 Pageable pageable) {
+        log.debug("Finding all payment cards with filters - active: {}", active);
+        
         Specification<PaymentCard> spec = configureSpecification(active,
                 expiresAfter,
                 expiresBefore);
 
         Page<PaymentCard> paymentCards = paymentCardRepo.findAll(spec, pageable);
+        log.debug("Found {} payment cards", paymentCards.getTotalElements());
 
         return mapper.toDto(paymentCards);
     }
@@ -130,7 +152,10 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     @Override
     @Cacheable(value = "cards", key = "#userId")
     public List<PaymentCardResponseDto> findAllByUserId(long userId) {
+        log.debug("Finding all payment cards for user ID: {}", userId);
+        
         List<PaymentCard> paymentCards = paymentCardRepo.findAllByUserId(userId);
+        log.debug("Found {} payment cards for user ID: {}", paymentCards.size(), userId);
 
         return mapper.toDto(paymentCards);
     }
@@ -166,6 +191,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     private void checkCardNumberNotTaken(String cardNumber) {
         paymentCardRepo.findByNumber(cardNumber)
                 .ifPresent(card -> {
+                    log.warn("Payment card with number already exists: {}", cardNumber);
                     throw new PaymentCardAlreadyExistsException("number", cardNumber);
                 });
     }
@@ -176,6 +202,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
         User user = userService.findById(paymentCardCreateDto.getUserId());
 
         if (user.getPaymentCards().size() >= cardProperties.getMaxLimit()) {
+            log.warn("Payment card limit exceeded for user ID: {}", user.getId());
             throw new PaymentCardLimitExceededException("Maximum number of cards (" +
                     cardProperties.getMaxLimit() + ") exceeded");
         }
@@ -207,6 +234,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
         PaymentCard card = findById(id);
 
         if (active == card.getActive()) {
+            log.warn("Payment card with ID {} already has status: {}", id, active ? "active" : "inactive");
             throw new BadRequestException("Card with id=" + id + " have status=" + (active ? "active" : "inactive"));
         }
 

@@ -5,6 +5,7 @@ import com.innowise.userservice.dto.response.ValidationErrorResponse;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,12 +18,14 @@ import static com.innowise.userservice.util.ErrorResponseHelper.buildErrorRespon
 import static com.innowise.userservice.util.ErrorResponseHelper.buildValidationErrorResponse;
 
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e,
                                                                                          HttpServletRequest request) {
+        log.warn("Validation error on request to {}: {}", request.getRequestURI(), e.getMessage());
         var body = buildValidationErrorResponse(e, request);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
@@ -31,6 +34,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException e,
                                                                    HttpServletRequest request) {
+        log.warn("Bad request on {}: {}", request.getRequestURI(), e.getMessage());
         var body = buildErrorResponse(e, HttpStatus.BAD_REQUEST, request);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
@@ -39,6 +43,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({UserNotFoundException.class, PaymentCardNotFoundException.class})
     public ResponseEntity<ErrorResponse> handlePaymentCardNotFound(RuntimeException e,
                                                                    HttpServletRequest request) {
+        log.warn("Resource not found on {}: {}", request.getRequestURI(), e.getMessage());
         var body = buildErrorResponse(e, HttpStatus.NOT_FOUND, request);
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
@@ -49,6 +54,7 @@ public class GlobalExceptionHandler {
             PaymentCardLimitExceededException.class})
     public ResponseEntity<ErrorResponse> handleUserAlreadyExists(RuntimeException e,
                                                                  HttpServletRequest request) {
+        log.warn("Conflict on {}: {}", request.getRequestURI(), e.getMessage());
         var body = buildErrorResponse(e, HttpStatus.CONFLICT, request);
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
@@ -62,6 +68,7 @@ public class GlobalExceptionHandler {
     })
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(RuntimeException e,
                                                                     HttpServletRequest request) {
+        log.warn("Unauthorized access on {}: {}", request.getRequestURI(), e.getMessage());
         var body = buildErrorResponse(e, HttpStatus.UNAUTHORIZED, request);
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
@@ -73,6 +80,7 @@ public class GlobalExceptionHandler {
     })
     public ResponseEntity<ErrorResponse> handleForbiddenException(RuntimeException e,
                                                                  HttpServletRequest request) {
+        log.warn("Forbidden access on {}: {}", request.getRequestURI(), e.getMessage());
         var body = buildErrorResponse(e, HttpStatus.FORBIDDEN, request);
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
@@ -81,6 +89,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e,
                                                          HttpServletRequest request) {
+        log.error("Internal server error on {}: {}", request.getRequestURI(), e.getMessage(), e);
         var body = buildErrorResponse(e, HttpStatus.INTERNAL_SERVER_ERROR, request);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);

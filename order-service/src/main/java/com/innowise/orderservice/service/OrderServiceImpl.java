@@ -15,6 +15,7 @@ import com.innowise.orderservice.mapper.OrderMapper;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.specification.OrderSpecification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -29,6 +30,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -41,11 +43,14 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderFullResponseDto create(OrderCreateDto orderCreateDto) {
+        log.info("Creating new order for user ID: {}", orderCreateDto.userId());
+        
         Order order = orderMapper.toEntity(orderCreateDto);
 
         processOrderItems(order, orderCreateDto.items());
 
         Order savedOrder = orderRepo.save(order);
+        log.info("Order created successfully with ID: {}", savedOrder.getId());
 
         return convertToFullDto(savedOrder);
     }
@@ -56,17 +61,24 @@ public class OrderServiceImpl implements OrderService {
                                           Boolean deleted,
                                           LocalDate createdAfter,
                                           LocalDate createdBefore) {
+        log.debug("Finding all orders with filters - status: {}, deleted: {}", orderStatus, deleted);
+        
         Specification<Order> spec = prepareSpecification(orderStatus, deleted, createdAfter, createdBefore);
 
         Page<Order> orders = orderRepo.findAll(spec, pageable);
+        log.debug("Found {} orders", orders.getTotalElements());
 
         return orders.map(this::convertToFullDto);
     }
 
     @Override
     public Order findById(long id) {
+        log.debug("Finding order by ID: {}", id);
         return orderRepo.findById(id).
-                orElseThrow(() -> new OrderNotFoundException("id", String.valueOf(id)));
+                orElseThrow(() -> {
+                    log.warn("Order not found with ID: {}", id);
+                    return new OrderNotFoundException("id", String.valueOf(id));
+                });
     }
 
     @Override
@@ -76,9 +88,12 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderFullResponseDto> findByUserId(long userId) {
+        log.debug("Finding orders for user ID: {}", userId);
+        
         List<Order> orders = orderRepo.findAllByUserId(userId);
 
         UserResponseDto userDto = userService.getUserById(userId);
+        log.debug("Found {} orders for user ID: {}", orders.size(), userId);
 
         return orders.stream()
                 .map(order -> orderMapper.toFullDto(order, userDto))
@@ -88,6 +103,8 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderFullResponseDto update(long id, OrderUpdateDto orderUpdateDto) {
+        log.info("Updating order with ID: {}", id);
+        
         Order curOrder = findById(id);
 
         validateOrderNotDeleted(curOrder);
@@ -97,6 +114,7 @@ public class OrderServiceImpl implements OrderService {
         processOrderItems(curOrder, orderUpdateDto.items());
 
         orderRepo.save(curOrder);
+        log.info("Order updated successfully with ID: {}", id);
 
         return convertToFullDto(curOrder);
     }
@@ -104,12 +122,16 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void updateStatusFromPayment(long orderId, String paymentStatus) {
+        log.info("Updating order status from payment - Order ID: {}, Payment status: {}", orderId, paymentStatus);
+        
         Order order = findById(orderId);
 
         if (paymentStatus.equals("SUCCESS")) {
             order.setStatus(OrderStatus.CONFIRMED);
+            log.info("Order {} status changed to CONFIRMED", orderId);
         } else {
             order.setStatus(OrderStatus.CANCELED);
+            log.info("Order {} status changed to CANCELED", orderId);
         }
 
         orderRepo.save(order);
@@ -118,16 +140,21 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponseDto delete(long id) {
+        log.info("Deleting order with ID: {}", id);
+        
         Order curOrder = findById(id);
 
         validateOrderNotDeleted(curOrder);
 
         curOrder.setDeleted(true);
+        log.info("Order marked as deleted with ID: {}", id);
 
         return orderMapper.toDto(orderRepo.save(curOrder));
     }
 
     private void processOrderItems(Order order, List<OrderItemDto> itemsDto) {
+        log.debug("Processing {} order items", itemsDto.size());
+        
         order.getOrderItems().clear();
 
         BigDecimal totalPrice = BigDecimal.ZERO;
@@ -146,6 +173,7 @@ public class OrderServiceImpl implements OrderService {
             order.getOrderItems().add(orderItem);
         }
         order.setTotalPrice(totalPrice.setScale(2, RoundingMode.HALF_UP));
+        log.debug("Order total price calculated: {}", totalPrice);
     }
 
     private OrderFullResponseDto convertToFullDto(Order order) {
@@ -156,6 +184,7 @@ public class OrderServiceImpl implements OrderService {
 
     private void validateOrderNotDeleted(Order order) {
         if (Boolean.TRUE.equals(order.getDeleted())) {
+            log.warn("Attempted to modify deleted order with ID: {}", order.getId());
             throw new IllegalArgumentException("Order has been deleted");
         }
     }

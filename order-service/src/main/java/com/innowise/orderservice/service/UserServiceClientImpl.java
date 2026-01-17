@@ -4,12 +4,14 @@ import com.innowise.orderservice.dto.response.UserResponseDto;
 import com.innowise.orderservice.exception.ExternalUserNotFoundException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceClientImpl implements UserServiceClient {
@@ -20,6 +22,8 @@ public class UserServiceClientImpl implements UserServiceClient {
     @Override
     @CircuitBreaker(name = "userService", fallbackMethod = "fallbackUser")
     public UserResponseDto getUserById(long id) {
+        log.debug("Fetching user from user-service with ID: {}", id);
+        
         return userServiceWebClient.get()
                 .uri(uri -> uri
                         .path("/api/users/{id}")
@@ -29,6 +33,7 @@ public class UserServiceClientImpl implements UserServiceClient {
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response -> {
                     if (response.statusCode().equals(HttpStatus.NOT_FOUND)) {
+                        log.warn("User not found in user-service with ID: {}", id);
                         return Mono.error(new ExternalUserNotFoundException("id", String.valueOf(id)));
                     }
                     return response.createException().flatMap(Mono::error);
@@ -42,6 +47,7 @@ public class UserServiceClientImpl implements UserServiceClient {
             throw (ExternalUserNotFoundException) ex;
         }
 
+        log.warn("User service unavailable, using fallback for user ID: {}. Error: {}", id, ex.getMessage());
         return new UserResponseDto(
                 id,
                 "unknown",
