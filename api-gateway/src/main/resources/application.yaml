@@ -38,6 +38,9 @@ jwt:
   refresh-key: ${JWT_REFRESH_KEY}
 
 management:
+  otlp:
+    tracing:
+      endpoint: ${TEMPO_URL}
   endpoints:
     web:
       exposure:
@@ -60,3 +63,7 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
