@@ -32,7 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentResponseDto create(PaymentCreateDto paymentCreateDto) {
-        log.info("Creating payment for order ID: {}, user ID: {}", paymentCreateDto.getOrderId(), paymentCreateDto.getUserId());
+        log.info("Creating payment for order ID: {}, user ID: {}", paymentCreateDto.orderId(), paymentCreateDto.userId());
         
         Payment payment = preparePayment(paymentCreateDto);
         Payment savedPayment = paymentRepo.save(payment);
