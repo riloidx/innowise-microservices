@@ -1,7 +1,8 @@
 package com.innowise.orderservice.service;
 
 import com.innowise.orderservice.dto.response.UserResponseDto;
+import reactor.core.publisher.Mono;
 
 public interface UserServiceClient {
-    UserResponseDto getUserById(long ig);
+    Mono<UserResponseDto> getUserById(long ig);
 }
