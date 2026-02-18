@@ -4,6 +4,7 @@ import com.innowise.orderservice.dto.request.OrderCreateDto;
 import com.innowise.orderservice.dto.request.OrderItemDto;
 import com.innowise.orderservice.dto.request.OrderUpdateDto;
 import com.innowise.orderservice.dto.response.OrderFullResponseDto;
+import com.innowise.orderservice.dto.response.OrderResponseDto;
 import com.innowise.orderservice.dto.response.UserResponseDto;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.entity.Order;
@@ -23,6 +24,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -73,12 +76,15 @@ class OrderServiceImplTest {
         when(orderMapper.toEntity(createDto)).thenReturn(orderEntity);
         when(itemService.findById(10L)).thenReturn(item);
         when(orderRepo.save(orderEntity)).thenReturn(savedOrder);
-        when(userService.getUserById(1L)).thenReturn(mockUser);
+        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
         when(orderMapper.toFullDto(savedOrder, mockUser)).thenReturn(expectedDto);
 
-        OrderFullResponseDto result = service.create(createDto);
+        Mono<OrderFullResponseDto> result = service.create(createDto);
 
-        assertEquals(expectedDto, result);
+        StepVerifier.create(result)
+                .expectNext(expectedDto)
+                .verifyComplete();
+
         assertEquals(new BigDecimal("200.00"), orderEntity.getTotalPrice());
         verify(userService).getUserById(1L);
     }
@@ -93,12 +99,17 @@ class OrderServiceImplTest {
         OrderFullResponseDto fullDto = new OrderFullResponseDto(1L, OrderStatus.PENDING, false, BigDecimal.TEN, mockUser, List.of());
 
         when(orderRepo.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(userService.getUserById(1L)).thenReturn(mockUser);
+        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
         when(orderMapper.toFullDto(order, mockUser)).thenReturn(fullDto);
 
-        Page<OrderFullResponseDto> result = service.findAll(pageable, null, null, null, null);
+        Mono<Page<OrderFullResponseDto>> result = service.findAll(pageable, null, null, null, null);
 
-        assertEquals(1, result.getTotalElements());
+        StepVerifier.create(result)
+                .assertNext(resultPage -> {
+                    assertEquals(1, resultPage.getTotalElements());
+                })
+                .verifyComplete();
+
         verify(userService).getUserById(1L);
     }
 
@@ -115,11 +126,14 @@ class OrderServiceImplTest {
         order.setUserId(1L);
 
         when(orderRepo.findAllByUserId(1L)).thenReturn(List.of(order));
-        when(userService.getUserById(1L)).thenReturn(mockUser);
-
+        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
         when(orderMapper.toFullDto(order, mockUser)).thenReturn(null);
 
-        service.findByUserId(1L);
+        Mono<List<OrderFullResponseDto>> result = service.findByUserId(1L);
+
+        StepVerifier.create(result)
+                .expectNextCount(1)
+                .verifyComplete();
 
         verify(userService).getUserById(1L);
         verify(orderMapper).toFullDto(order, mockUser);
@@ -155,6 +169,8 @@ class OrderServiceImplTest {
         item.setId(10L);
         item.setPrice(BigDecimal.TEN);
 
+        OrderFullResponseDto expectedDto = new OrderFullResponseDto(orderId, OrderStatus.CONFIRMED, false, BigDecimal.TEN, mockUser, List.of());
+
         when(orderRepo.findById(orderId)).thenReturn(Optional.of(existingOrder));
         when(itemService.findById(10L)).thenReturn(item);
 
@@ -165,10 +181,14 @@ class OrderServiceImplTest {
         }).when(orderMapper).updateEntityFromDto(updateDto, existingOrder);
 
         when(orderRepo.save(any(Order.class))).thenReturn(existingOrder);
+        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
+        when(orderMapper.toFullDto(existingOrder, mockUser)).thenReturn(expectedDto);
 
-        when(userService.getUserById(1L)).thenReturn(mockUser);
+        Mono<OrderFullResponseDto> result = service.update(orderId, updateDto);
 
-        service.update(orderId, updateDto);
+        StepVerifier.create(result)
+                .expectNext(expectedDto)
+                .verifyComplete();
 
         verify(orderMapper).updateEntityFromDto(updateDto, existingOrder);
         verify(orderRepo).save(any(Order.class));
@@ -195,10 +215,17 @@ class OrderServiceImplTest {
         order.setId(orderId);
         order.setDeleted(false);
 
+        OrderResponseDto expectedDto = new OrderResponseDto(orderId, OrderStatus.PENDING, true, BigDecimal.ZERO, List.of());
+
         when(orderRepo.findById(orderId)).thenReturn(Optional.of(order));
         when(orderRepo.save(order)).thenReturn(order);
+        when(orderMapper.toDto(order)).thenReturn(expectedDto);
 
-        service.delete(orderId);
+        Mono<OrderResponseDto> result = service.delete(orderId);
+
+        StepVerifier.create(result)
+                .expectNext(expectedDto)
+                .verifyComplete();
 
         assertTrue(order.getDeleted());
         verify(orderRepo).save(order);
