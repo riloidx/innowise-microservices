@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: payment-service
+
+api:
+  random-number-url: ${RANDOM_NUMBER_API_URL:https://csrng.net/csrng/csrng.php?min=1&max=100}
