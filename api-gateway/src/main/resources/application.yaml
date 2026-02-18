@@ -24,6 +24,13 @@ spring:
               predicates:
                 - Path=/api/orders/**
 
+            - id: payment-service-route
+              uri: ${PAYMENT_SERVICE_URL}
+              predicates:
+                - Path=/api/payments/**
+              filters:
+                - Authentication
+
 jwt:
   access-key: ${JWT_ACCESS_KEY}
   refresh-key: ${JWT_REFRESH_KEY}
