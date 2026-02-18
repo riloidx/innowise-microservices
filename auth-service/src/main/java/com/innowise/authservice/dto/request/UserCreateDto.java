@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
 
@@ -13,15 +12,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegistrationDto {
-    @NotBlank(message = "Login is required")
-    @Length(min = 3, max = 20, message = "Login must have length between 3 and 20")
-    private String login;
-
-    @NotBlank(message = "Password is required")
-    @Length(min = 8, max = 20, message = "Password must have length between 8 and 20")
-    private String password;
-
+public class UserCreateDto {
     @NotBlank(message = "First name is required")
     @Size(max = 64, message = "First name must not exceed 64 characters")
     private String name;

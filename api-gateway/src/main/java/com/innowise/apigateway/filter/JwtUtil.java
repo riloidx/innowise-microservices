@@ -1,19 +1,14 @@
-package com.innowise.userservice.security;
+package com.innowise.apigateway.filter;
 
-import com.innowise.userservice.config.JwtProperties;
+
+import com.innowise.apigateway.config.JwtProperties;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.function.Function;
 
 @Component
@@ -40,19 +35,15 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token, boolean isRefresh) {
         Key key = getKey(isRefresh);
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (ExpiredJwtException | MalformedJwtException e) {
-            throw e;
-        }
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     private Key getKey(boolean isRefresh) {
-        String secret = isRefresh ? jwtProperties.getRefresh().getKey() : jwtProperties.getAccess().getKey();
+        String secret = isRefresh ? jwtProperties.getRefreshKey() : jwtProperties.getAccessKey();
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
@@ -63,14 +54,5 @@ public class JwtUtil {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    public Collection<? extends GrantedAuthority> getAuthoritiesFromToken(String token, boolean isRefresh) {
-        String role = extractRole(token, isRefresh);
-        if (role != null) {
-            String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-            return Collections.singletonList(new SimpleGrantedAuthority(authority));
-        }
-        return Collections.emptyList();
     }
 }
