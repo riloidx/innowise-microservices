@@ -33,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserFeignClient userFeignClient;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public AuthResponseDto register(RegistrationDto registrationDto) {
         if (credentialRepo.findCredentialByLogin(registrationDto.getLogin()).isPresent()) {
             throw new CredentialAlreadyExistsException("login", registrationDto.getLogin());
@@ -46,10 +46,14 @@ public class AuthServiceImpl implements AuthService {
                 .birthDate(registrationDto.getBirthDate())
                 .build();
 
-        UserResponseDto savedUser = null;
+        UserResponseDto savedUser;
         try {
             savedUser = userFeignClient.createUser(userCreateDto);
+        } catch (Exception e) {
+            throw new RuntimeException("External service error: registration aborted");
+        }
 
+        try {
             Credential credential = Credential.builder()
                     .userId(savedUser.getId())
                     .login(registrationDto.getLogin())
@@ -64,16 +68,11 @@ public class AuthServiceImpl implements AuthService {
             String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
             return new AuthResponseDto(credential.getLogin(), accessToken, refreshToken);
+
         } catch (Exception e) {
+            compensateUserCreation(savedUser.getId());
 
-            if (savedUser != null) {
-                try {
-                    userFeignClient.deleteUser(savedUser.getId());
-                } catch (Exception ignored) {
-
-                }
-            }
-            throw new RuntimeException("Registration failed: " + e.getMessage(), e);
+            throw new RuntimeException("Registration failed due to internal error. User data rolled back.");
         }
     }
 
@@ -129,6 +128,14 @@ public class AuthServiceImpl implements AuthService {
     private void matchPasswordOrThrow(String hashPassword, String password) {
         if (!passwordEncoder.matches(password, hashPassword)) {
             throw new InvalidCredentialsException("Invalid login or password");
+        }
+    }
+
+    private void compensateUserCreation(Long userId) {
+        try {
+            userFeignClient.deleteUser(userId);
+        } catch (Exception e) {
+
         }
     }
 }

@@ -16,10 +16,9 @@ public class UserServiceClientImpl implements UserServiceClient {
 
     private final WebClient userServiceWebClient;
 
-
     @Override
     @CircuitBreaker(name = "userService", fallbackMethod = "fallbackUser")
-    public UserResponseDto getUserById(long id) {
+    public Mono<UserResponseDto> getUserById(long id) {
         return userServiceWebClient.get()
                 .uri(uri -> uri
                         .path("/api/users/{id}")
@@ -33,20 +32,19 @@ public class UserServiceClientImpl implements UserServiceClient {
                     }
                     return response.createException().flatMap(Mono::error);
                 })
-                .bodyToMono(UserResponseDto.class)
-                .block();
+                .bodyToMono(UserResponseDto.class);
     }
 
-    public UserResponseDto fallbackUser(long id, Throwable ex) {
+    public Mono<UserResponseDto> fallbackUser(long id, Throwable ex) {
         if (ex instanceof ExternalUserNotFoundException) {
-            throw (ExternalUserNotFoundException) ex;
+            return Mono.error(ex);
         }
 
-        return new UserResponseDto(
+        return Mono.just(new UserResponseDto(
                 id,
                 "unknown",
                 "Unknown",
                 "unavailable"
-        );
+        ));
     }
 }
