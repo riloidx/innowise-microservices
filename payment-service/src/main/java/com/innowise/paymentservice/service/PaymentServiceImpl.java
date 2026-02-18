@@ -2,6 +2,7 @@ package com.innowise.paymentservice.service;
 
 import com.innowise.paymentservice.dto.request.PaymentCreateDto;
 import com.innowise.paymentservice.dto.response.PaymentResponseDto;
+import com.innowise.paymentservice.dto.response.TotalSum;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.PaymentStatus;
 import com.innowise.paymentservice.exception.ExternalServiceException;
@@ -9,16 +10,14 @@ import com.innowise.paymentservice.integration.RandomNumberClient;
 import com.innowise.paymentservice.kafka.event.PaymentEvent;
 import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.repository.PaymentRepository;
-import com.innowise.paymentservice.specification.PaymentSpecification;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
@@ -44,17 +43,28 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Page<PaymentResponseDto> findAll(Long orderId, Long userId, PaymentStatus paymentStatus, Pageable pageable) {
-        Specification<Payment> spec = prepareSpecification(orderId, userId, paymentStatus);
-
-        Page<Payment> payments = paymentRepo.findAll(spec, pageable);
-
-        return mapper.toDto(payments);
+    public List<PaymentResponseDto> findByUserId(Long userId) {
+        return mapper.toDto(paymentRepo.findByUserId(userId));
     }
 
     @Override
-    public BigDecimal getTotalSum(Instant start, Instant end, Long userId) {
-        return paymentRepo.sumPayments(start, end, userId);
+    public List<PaymentResponseDto> findByOrderId(Long orderId) {
+        return mapper.toDto(paymentRepo.findByOrderId(orderId));
+    }
+
+    @Override
+    public List<PaymentResponseDto> findByStatus(PaymentStatus status) {
+        return mapper.toDto(paymentRepo.findByStatus(status));
+    }
+
+    @Override
+    public TotalSum getTotalSum(Instant start, Instant end, Long userId) {
+        return paymentRepo.sumAmountByUserIdAndDateRange(userId, start, end);
+    }
+
+    @Override
+    public TotalSum getTotalSumAdmin(Instant start, Instant end) {
+        return paymentRepo.sumAmountForDateRange(start, end);
     }
 
     private Payment preparePayment(PaymentCreateDto paymentCreateDto) {
@@ -66,34 +76,18 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private PaymentStatus getPaymentStatus() {
-        var response = randomNumberClient.getRandomNumber();
+        try {
+            var response = randomNumberClient.getRandomNumber();
 
-        if (response == null) {
-            throw new ExternalServiceException("External service return null");
+            if (response == null || response.isEmpty()) {
+                throw new ExternalServiceException("External service return null");
+            }
+
+            int randomNumber = response.getFirst().random();
+            return randomNumber % 2 == 0 ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
+
+        } catch (FeignException e) {
+            throw new ExternalServiceException("External service communication failed: " + e.getMessage());
         }
-
-        int randomNumber = response.getFirst().random();
-
-        return randomNumber % 2 == 0 ? PaymentStatus.SUCCESS : PaymentStatus.FAILED;
-    }
-
-    private Specification<Payment> prepareSpecification(Long orderId,
-                                                        Long userId,
-                                                        PaymentStatus paymentStatus) {
-        Specification<Payment> spec = Specification.unrestricted();
-
-        if (orderId != null) {
-            spec = spec.and(PaymentSpecification.hasOrderId(orderId));
-        }
-
-        if (userId != null) {
-            spec = spec.and(PaymentSpecification.hasUserId(userId));
-        }
-
-        if (paymentStatus != null) {
-            spec = spec.and(PaymentSpecification.hasStatus(paymentStatus));
-        }
-
-        return spec;
     }
 }

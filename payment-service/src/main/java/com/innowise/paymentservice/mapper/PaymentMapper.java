@@ -4,7 +4,8 @@ import com.innowise.paymentservice.dto.request.PaymentCreateDto;
 import com.innowise.paymentservice.dto.response.PaymentResponseDto;
 import com.innowise.paymentservice.entity.Payment;
 import org.mapstruct.Mapper;
-import org.springframework.data.domain.Page;
+
+import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface PaymentMapper {
@@ -12,7 +13,5 @@ public interface PaymentMapper {
 
     PaymentResponseDto toDto(Payment payment);
 
-    default Page<PaymentResponseDto> toDto(Page<Payment> payments) {
-        return payments.map(this::toDto);
-    }
+    List<PaymentResponseDto> toDto(List<Payment> payments);
 }
