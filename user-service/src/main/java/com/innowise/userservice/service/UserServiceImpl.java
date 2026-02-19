@@ -12,6 +12,7 @@ import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.specification.UserSpecification;
 import com.innowise.userservice.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -36,10 +38,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @CachePut(value = "user", key = "#result.id")
     public UserResponseDto create(UserCreateDto userCreateDto) {
+        log.info("Creating new user with email: {}", userCreateDto.getEmail());
+        
         checkEmailNotTaken(userCreateDto.getEmail());
         User user = mapper.toEntity(userCreateDto);
 
         User savedUser = userRepo.save(user);
+        log.info("User created successfully with ID: {}", savedUser.getId());
 
         return mapper.toDto(savedUser);
     }
@@ -48,10 +53,15 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @CachePut(value = "user", key = "#result.id")
     public UserResponseDto update(long id, UserUpdateDto userUpdateDto) {
+        log.info("Updating user with ID: {}", id);
+        
         User curUser = getValidatedUserForUpdate(id, userUpdateDto);
         mapper.updateEntityFromDto(userUpdateDto, curUser);
 
-        return mapper.toDto(userRepo.save(curUser));
+        User savedUser = userRepo.save(curUser);
+        log.info("User updated successfully with ID: {}", id);
+        
+        return mapper.toDto(savedUser);
     }
 
     @Override
@@ -62,18 +72,24 @@ public class UserServiceImpl implements UserService {
                     @CacheEvict(value = "cards", key = "#id")
             })
     public void delete(long id) {
+        log.info("Deleting user with ID: {}", id);
+        
         findById(id);
 
         userRepo.deleteById(id);
+        log.info("User deleted successfully with ID: {}", id);
     }
 
     @Override
     @Transactional
     @CachePut(value = "user", key = "#result.id")
     public UserResponseDto changeStatus(long id, boolean status) {
+        log.info("Changing user status - ID: {}, new status: {}", id, status ? "active" : "inactive");
+        
         User curUser = getValidatedUserForChangingStatus(id, status);
 
         curUser = userRepo.save(curUser);
+        log.info("User status changed successfully for ID: {}", id);
 
         return mapper.toDto(curUser);
     }
@@ -81,8 +97,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public User findById(long id) {
+        log.debug("Finding user by ID: {}", id);
         return userRepo.findById(id).
-                orElseThrow(() -> new UserNotFoundException("id", String.valueOf(id)));
+                orElseThrow(() -> {
+                    log.warn("User not found with ID: {}", id);
+                    return new UserNotFoundException("id", String.valueOf(id));
+                });
     }
 
     @Override
@@ -95,8 +115,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Cacheable(value = "user", key = "#email")
     public UserResponseDto findDtoByEmail(String email) {
+        log.debug("Finding user by email: {}", email);
         User user = userRepo.findByEmail(email).
-                orElseThrow(() -> new UserNotFoundException("email", email));
+                orElseThrow(() -> {
+                    log.warn("User not found with email: {}", email);
+                    return new UserNotFoundException("email", email);
+                });
         return mapper.toDto(user);
     }
 
@@ -106,9 +130,12 @@ public class UserServiceImpl implements UserService {
                                          LocalDate birthDate,
                                          Boolean active,
                                          Pageable pageable) {
+        log.debug("Finding all users with filters - name: {}, surname: {}, active: {}", name, surname, active);
+        
         Specification<User> spec = configureSpecification(name, surname, birthDate, active);
 
         Page<User> users = userRepo.findAll(spec, pageable);
+        log.debug("Found {} users", users.getTotalElements());
 
         return mapper.toDto(users);
     }
@@ -142,6 +169,7 @@ public class UserServiceImpl implements UserService {
     private void checkEmailNotTaken(String email) {
         userRepo.findByEmail(email)
                 .ifPresent(u -> {
+                    log.warn("User with email already exists: {}", email);
                     throw new UserAlreadyExistsException("email", email);
                 });
     }
@@ -164,6 +192,7 @@ public class UserServiceImpl implements UserService {
         User user = findById(id);
 
         if (active == user.getActive()) {
+            log.warn("User with ID {} already has status: {}", id, active ? "active" : "inactive");
             throw new BadRequestException("User with id=" + id + " have status=" + (active ? "active" : "inactive"));
         }
 

@@ -11,6 +11,10 @@ spec:
     metadata:
       labels:
         app: auth-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/api/actuator/prometheus"
+        prometheus.io/port: "8080"
     spec:
       containers:
         - name: auth-app
@@ -19,6 +23,8 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: TEMPO_URL
+              value: "http://tempo:4317"
             - name: DB_URL
               valueFrom:
                 secretKeyRef:

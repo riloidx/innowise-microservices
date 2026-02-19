@@ -9,6 +9,7 @@ import com.innowise.orderservice.exception.ItemNotFoundException;
 import com.innowise.orderservice.mapper.ItemMapper;
 import com.innowise.orderservice.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
@@ -26,25 +28,35 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemResponseDto create(ItemCreateDto itemCreateDto) {
+        log.info("Creating new item with name: {}", itemCreateDto.name());
+        
         validateNameIsUnique(itemCreateDto.name());
 
         Item item = itemMapper.toEntity(itemCreateDto);
-
-        return itemMapper.toDto(itemRepo.save(item));
+        Item savedItem = itemRepo.save(item);
+        
+        log.info("Item created successfully with ID: {}", savedItem.getId());
+        return itemMapper.toDto(savedItem);
     }
 
     @Override
     public List<ItemResponseDto> findAll() {
+        log.debug("Finding all items");
 
         List<Item> items = itemRepo.findAll();
+        log.debug("Found {} items", items.size());
 
         return itemMapper.toDto(items);
     }
 
     @Override
     public Item findById(long id) {
+        log.debug("Finding item by ID: {}", id);
         return itemRepo.findById(id).
-                orElseThrow(() -> new ItemNotFoundException("id", String.valueOf(id)));
+                orElseThrow(() -> {
+                    log.warn("Item not found with ID: {}", id);
+                    return new ItemNotFoundException("id", String.valueOf(id));
+                });
     }
 
     @Override
@@ -54,8 +66,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemResponseDto findByName(String name) {
+        log.debug("Finding item by name: {}", name);
+        
         Item item = itemRepo.findByName(name).
-                orElseThrow(() -> new ItemNotFoundException("name", name));
+                orElseThrow(() -> {
+                    log.warn("Item not found with name: {}", name);
+                    return new ItemNotFoundException("name", name);
+                });
 
         return itemMapper.toDto(item);
     }
@@ -63,6 +80,8 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemResponseDto update(long id, ItemUpdateDto itemUpdateDto) {
+        log.info("Updating item with ID: {}", id);
+        
         validateNameIsUnique(itemUpdateDto.name());
 
         Item curItem = findById(id);
@@ -70,6 +89,7 @@ public class ItemServiceImpl implements ItemService {
         itemMapper.updateEntityFromDto(itemUpdateDto, curItem);
 
         Item savedItem = itemRepo.save(curItem);
+        log.info("Item updated successfully with ID: {}", id);
 
         return itemMapper.toDto(savedItem);
     }
@@ -77,13 +97,18 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public void delete(long id) {
+        log.info("Deleting item with ID: {}", id);
+        
         findById(id);
 
         itemRepo.deleteById(id);
+        log.info("Item deleted successfully with ID: {}", id);
     }
 
     @Override
     public BigDecimal calculateTotalPriceOfAllItems() {
+        log.debug("Calculating total price of all items");
+        
         List<Item> allItems = itemRepo.findAll();
 
         BigDecimal total = allItems.stream()
@@ -93,11 +118,15 @@ public class ItemServiceImpl implements ItemService {
                         BigDecimal::add
                 );
 
-        return total.setScale(2, RoundingMode.HALF_UP);
+        BigDecimal result = total.setScale(2, RoundingMode.HALF_UP);
+        log.debug("Total price of all items: {}", result);
+        
+        return result;
     }
 
     private void validateNameIsUnique(String name) {
         if (itemRepo.findByName(name).isPresent()) {
+            log.warn("Item with name already exists: {}", name);
             throw new ItemAlreadyExistsException("name", name);
         }
     }

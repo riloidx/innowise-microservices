@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -35,7 +36,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AuthResponseDto register(RegistrationDto registrationDto) {
+        log.info("Starting user registration for login: {}", registrationDto.getLogin());
+        
         if (credentialRepo.findCredentialByLogin(registrationDto.getLogin()).isPresent()) {
+            log.warn("Registration failed: login already exists - {}", registrationDto.getLogin());
             throw new CredentialAlreadyExistsException("login", registrationDto.getLogin());
         }
 
@@ -48,7 +52,9 @@ public class AuthServiceImpl implements AuthService {
 
         UserResponseDto savedUser;
         try {
+            log.debug("Creating user in user-service for login: {}", registrationDto.getLogin());
             savedUser = userFeignClient.createUser(userCreateDto);
+            log.debug("User created successfully with ID: {}", savedUser.getId());
         } catch (Exception e) {
             throw new RuntimeException("External service error: registration aborted");
         }
@@ -62,12 +68,26 @@ public class AuthServiceImpl implements AuthService {
                     .build();
 
             credentialRepo.save(credential);
+            log.debug("Credentials saved for user ID: {}", savedUser.getId());
 
             CustomUserDetails userDetails = new CustomUserDetails(credential);
             String accessToken = jwtUtil.generateAccessToken(userDetails);
             String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
+            log.info("User registration completed successfully for login: {}", registrationDto.getLogin());
             return new AuthResponseDto(credential.getLogin(), accessToken, refreshToken);
+        } catch (Exception e) {
+            log.error("Registration failed for login: {}. Error: {}", registrationDto.getLogin(), e.getMessage());
+
+            if (savedUser != null) {
+                try {
+                    log.debug("Rolling back user creation for user ID: {}", savedUser.getId());
+                    userFeignClient.deleteUser(savedUser.getId());
+                } catch (Exception ignored) {
+                    log.warn("Failed to rollback user creation for user ID: {}", savedUser.getId());
+                }
+            }
+            throw new RuntimeException("Registration failed: " + e.getMessage(), e);
 
         } catch (Exception e) {
             compensateUserCreation(savedUser.getId());
@@ -78,6 +98,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponseDto login(LoginDto loginDto) {
+        log.info("User login attempt for login: {}", loginDto.getLogin());
+        
         Credential credential = ((CustomUserDetails) userDetailsService.
                 loadUserByUsername(loginDto.getLogin())).credential();
 
@@ -87,18 +109,23 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtUtil.generateAccessToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
+        log.info("User logged in successfully: {}", loginDto.getLogin());
         return new AuthResponseDto(credential.getLogin(), accessToken, refreshToken);
     }
 
 
     @Override
     public RefreshResponseDto refresh(RefreshRequestDto refreshRequestDto) {
+        log.info("Token refresh attempt");
+        
         String refreshToken = refreshRequestDto.getRefreshToken();
         String username = jwtUtil.extractUsername(refreshToken, true);
+        log.debug("Refreshing token for user: {}", username);
 
         CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
 
         if (!jwtUtil.isTokenValid(refreshToken, userDetails, true)) {
+            log.warn("Invalid refresh token for user: {}", username);
             throw new InvalidCredentialsException("Invalid refresh token");
         }
 
@@ -109,24 +136,29 @@ public class AuthServiceImpl implements AuthService {
         response.setAccessToken(newAccessToken);
         response.setRefreshToken(newRefreshToken);
 
+        log.info("Token refreshed successfully for user: {}", username);
         return response;
     }
 
     @Override
     public ValidateResponseDto validateToken(String token) {
+        log.debug("Validating token");
 
         String username = jwtUtil.extractUsername(token, false);
         CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
 
         if (!jwtUtil.isTokenValid(token, userDetails, false)) {
+            log.warn("Token validation failed for user: {}", username);
             throw new InvalidCredentialsException("Invalid refresh token");
         }
 
+        log.debug("Token validated successfully for user: {}", username);
         return new ValidateResponseDto(true);
     }
 
     private void matchPasswordOrThrow(String hashPassword, String password) {
         if (!passwordEncoder.matches(password, hashPassword)) {
+            log.warn("Password mismatch during authentication");
             throw new InvalidCredentialsException("Invalid login or password");
         }
     }

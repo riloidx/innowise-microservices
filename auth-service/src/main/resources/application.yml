@@ -23,7 +23,32 @@ integration:
   user-service-url: ${USER_SERVICE_URL}
 
 management:
+  otlp:
+    tracing:
+      endpoint: ${TEMPO_URL}
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, info, tracing
   endpoint:
     health:
       probes:
         enabled: true
+      show-details: always
+
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      type: b3
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
