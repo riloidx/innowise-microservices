@@ -31,6 +31,12 @@ spring:
               filters:
                 - Authentication
 
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
 jwt:
   access-key: ${JWT_ACCESS_KEY}
   refresh-key: ${JWT_REFRESH_KEY}
