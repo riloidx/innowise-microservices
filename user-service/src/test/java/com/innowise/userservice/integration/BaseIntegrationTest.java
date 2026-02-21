@@ -33,7 +33,8 @@ public abstract class BaseIntegrationTest {
 
     protected HttpHeaders createAuthHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + ADMIN_TOKEN);
+        headers.set("X-User-Id", "1");
+        headers.set("X-User-Role", "ADMIN");
         return headers;
     }
 }

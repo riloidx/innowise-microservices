@@ -19,14 +19,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/cards")
+@RequestMapping("/users/cards")
 @RequiredArgsConstructor
 public class PaymentCardController {
 
     private final PaymentCardService paymentCardService;
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @paymentCardServiceImpl.getUserIdByCardId(#id) == authentication.userId")
+    @PreAuthorize("hasRole('ADMIN') or @paymentCardServiceImpl.getUserIdByCardId(#id) == authentication.principal.id")
     public ResponseEntity<PaymentCardResponseDto> getById(@PathVariable Long id) {
         PaymentCardResponseDto dto = paymentCardService.findDtoById(id);
 
@@ -34,7 +34,7 @@ public class PaymentCardController {
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or authentication.userId == #userId")
+    @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #userId")
     public ResponseEntity<List<PaymentCardResponseDto>> findAllCardsForUser(@PathVariable Long userId) {
         List<PaymentCardResponseDto> res = paymentCardService.findAllByUserId(userId);
 
@@ -42,7 +42,7 @@ public class PaymentCardController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<PaymentCardResponseDto>> findAll(
             @RequestParam(required = false) Boolean active,
             @RequestParam(value = "expires_after", required = false) LocalDate expiresAfter,

@@ -55,7 +55,7 @@ class ItemIntegrationTest extends BaseIntegrationTest {
 
         String jsonRequest = objectMapper.writeValueAsString(createDto);
 
-        mockMvc.perform(post("/items")
+        mockMvc.perform(post("/orders/items")
                         .contentType(APPLICATION_JSON)
                         .content(jsonRequest))
                 .andExpect(status().isCreated())
@@ -66,7 +66,7 @@ class ItemIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldFindAllItems() throws Exception {
-        mockMvc.perform(get("/items")
+        mockMvc.perform(get("/orders/items")
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -75,7 +75,7 @@ class ItemIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldFindItemById() throws Exception {
-        mockMvc.perform(get("/items/{id}", phoneItem.getId())
+        mockMvc.perform(get("/orders/items/{id}", phoneItem.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(phoneItem.getId().intValue())))
@@ -85,7 +85,7 @@ class ItemIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldFindItemByName() throws Exception {
-        mockMvc.perform(get("/items/search")
+        mockMvc.perform(get("/orders/items/search")
                         .param("name", laptopItem.getName())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -99,7 +99,7 @@ class ItemIntegrationTest extends BaseIntegrationTest {
 
         String jsonRequest = objectMapper.writeValueAsString(updateDto);
 
-        mockMvc.perform(put("/items/{id}", phoneItem.getId())
+        mockMvc.perform(put("/orders/items/{id}", phoneItem.getId())
                         .contentType(APPLICATION_JSON)
                         .content(jsonRequest))
                 .andExpect(status().isOk())
@@ -109,11 +109,11 @@ class ItemIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldDeleteItem() throws Exception {
-        mockMvc.perform(delete("/items/{id}", laptopItem.getId())
+        mockMvc.perform(delete("/orders/items/{id}", laptopItem.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/items/{id}", laptopItem.getId())
+        mockMvc.perform(get("/orders/items/{id}", laptopItem.getId())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }

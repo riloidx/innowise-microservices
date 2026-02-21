@@ -15,7 +15,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "integration.user-service.url=http://localhost:${wiremock.server.port}"
+                "integration.user-service.url=http://localhost:${wiremock.server.port}",
+                "spring.kafka.listener.auto-startup=false"
         }
 )
 @AutoConfigureMockMvc

@@ -4,34 +4,48 @@ spring:
 
   cloud:
     gateway:
-      server:
-        webflux:
-          routes:
-            - id: user-service-route
-              uri: ${USER_SERVICE_URL}
-              predicates:
-                - Path=/api/users/**
-              filters:
-                - Authentication
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5174"
+              - "http://app.local"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        - id: user-service-route
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - Authentication
 
-            - id: auth-service-route
-              uri: ${AUTH_SERVICE_URL}
-              predicates:
-                - Path=/api/auth/**
+        - id: auth-service-route
+          uri: ${AUTH_SERVICE_URL}
+          predicates:
+            - Path=/api/auth/**
 
-            - id: order-service-route
-              uri: ${ORDER_SERVICE_URL}
-              predicates:
-                - Path=/api/orders/**
-              filters:
-                - Authentication
+        - id: order-service-route
+          uri: ${ORDER_SERVICE_URL}
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - Authentication
 
-            - id: payment-service-route
-              uri: ${PAYMENT_SERVICE_URL}
-              predicates:
-                - Path=/api/payments/**
-              filters:
-                - Authentication
+        - id: payment-service-route
+          uri: ${PAYMENT_SERVICE_URL}
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - Authentication
 
 jwt:
   access-key: ${JWT_ACCESS_KEY}
