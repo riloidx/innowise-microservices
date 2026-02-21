@@ -37,8 +37,6 @@ spring:
           uri: ${ORDER_SERVICE_URL}
           predicates:
             - Path=/api/orders/**
-          filters:
-            - Authentication
 
         - id: payment-service-route
           uri: ${PAYMENT_SERVICE_URL}

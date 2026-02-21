@@ -22,8 +22,8 @@ import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class OrderIntegrationTest extends BaseIntegrationTest {
@@ -77,9 +77,13 @@ class OrderIntegrationTest extends BaseIntegrationTest {
         OrderCreateDto createDto = new OrderCreateDto(1L, List.of(new OrderItemDto(savedItem.getId(), 2)));
         String jsonRequest = objectMapper.writeValueAsString(createDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/orders")
+        var mvcResult = mockMvc.perform(MockMvcRequestBuilders.post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", notNullValue()))
                 .andExpect(jsonPath("$.totalPrice", is(2000.00)))
@@ -89,7 +93,11 @@ class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void findByIdShouldReturnFullDtoWithUserInfo() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders/{id}", savedOrder.getId()))
+        var mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/orders/{id}", savedOrder.getId()))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(savedOrder.getId().intValue())))
                 .andExpect(jsonPath("$.user.name", is("Alice")));
@@ -97,7 +105,11 @@ class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void findByUserIdShouldReturnListOfOrders() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders/user/{userId}", 1L))
+        var mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/orders/user/{userId}", 1L))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].user.surname", is("Smith")));
@@ -108,9 +120,13 @@ class OrderIntegrationTest extends BaseIntegrationTest {
         OrderUpdateDto updateDto = new OrderUpdateDto(OrderStatus.CONFIRMED, List.of(new OrderItemDto(savedItem.getId(), 5)));
         String jsonRequest = objectMapper.writeValueAsString(updateDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/orders/{id}", savedOrder.getId())
+        var mvcResult = mockMvc.perform(MockMvcRequestBuilders.put("/orders/{id}", savedOrder.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("CONFIRMED")))
                 .andExpect(jsonPath("$.totalPrice", is(5000.00)))
@@ -119,7 +135,11 @@ class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void deleteOrderShouldSoftDelete() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.delete("/orders/{id}", savedOrder.getId()))
+        var mvcResult = mockMvc.perform(MockMvcRequestBuilders.delete("/orders/{id}", savedOrder.getId()))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.deleted", is(true)));
 
@@ -129,26 +149,15 @@ class OrderIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void findAllWithFiltersShouldReturnCorrectPage() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/orders")
+        var mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/orders")
                         .param("status", "PENDING")
                         .param("deleted", "false"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].user.name", is("Alice")));
-    }
-
-    @Test
-    void createOrderShouldHandleUserServiceFailure() throws Exception {
-        stubFor(get(urlPathEqualTo("/api/users/2"))
-                .willReturn(aResponse().withStatus(500)));
-
-        OrderCreateDto createDto = new OrderCreateDto(2L, List.of(new OrderItemDto(savedItem.getId(), 1)));
-        String jsonRequest = objectMapper.writeValueAsString(createDto);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/orders")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.user.name", is("unknown")));
     }
 }

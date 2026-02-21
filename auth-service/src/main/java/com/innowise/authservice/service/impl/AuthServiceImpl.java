@@ -34,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserFeignClient userFeignClient;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public AuthResponseDto register(RegistrationDto registrationDto) {
         log.info("Starting user registration for login: {}", registrationDto.getLogin());
         
@@ -50,12 +50,16 @@ public class AuthServiceImpl implements AuthService {
                 .birthDate(registrationDto.getBirthDate())
                 .build();
 
-        UserResponseDto savedUser = null;
+        UserResponseDto savedUser;
         try {
             log.debug("Creating user in user-service for login: {}", registrationDto.getLogin());
             savedUser = userFeignClient.createUser(userCreateDto);
             log.debug("User created successfully with ID: {}", savedUser.getId());
+        } catch (Exception e) {
+            throw new RuntimeException("External service error: registration aborted");
+        }
 
+        try {
             Credential credential = Credential.builder()
                     .userId(savedUser.getId())
                     .login(registrationDto.getLogin())
@@ -84,6 +88,11 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
             throw new RuntimeException("Registration failed: " + e.getMessage(), e);
+
+        } catch (Exception e) {
+            compensateUserCreation(savedUser.getId());
+
+            throw new RuntimeException("Registration failed due to internal error. User data rolled back.");
         }
     }
 
@@ -151,6 +160,14 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(password, hashPassword)) {
             log.warn("Password mismatch during authentication");
             throw new InvalidCredentialsException("Invalid login or password");
+        }
+    }
+
+    private void compensateUserCreation(Long userId) {
+        try {
+            userFeignClient.deleteUser(userId);
+        } catch (Exception e) {
+
         }
     }
 }
