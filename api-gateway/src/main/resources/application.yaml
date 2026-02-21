@@ -4,32 +4,46 @@ spring:
 
   cloud:
     gateway:
-      server:
-        webflux:
-          default-filters:
-            - name: Authentication
-          routes:
-            - id: user-service-route
-              uri: ${USER_SERVICE_URL}
-              predicates:
-                - Path=/api/users/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5174"
+              - "http://app.local"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        - id: user-service-route
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - Authentication
 
-            - id: auth-service-route
-              uri: ${AUTH_SERVICE_URL}
-              predicates:
-                - Path=/api/auth/**
+        - id: auth-service-route
+          uri: ${AUTH_SERVICE_URL}
+          predicates:
+            - Path=/api/auth/**
 
-            - id: order-service-route
-              uri: ${ORDER_SERVICE_URL}
-              predicates:
-                - Path=/api/orders/**
+        - id: order-service-route
+          uri: ${ORDER_SERVICE_URL}
+          predicates:
+            - Path=/api/orders/**
 
-            - id: payment-service-route
-              uri: ${PAYMENT_SERVICE_URL}
-              predicates:
-                - Path=/api/payments/**
-              filters:
-                - Authentication
+        - id: payment-service-route
+          uri: ${PAYMENT_SERVICE_URL}
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - Authentication
 
 management:
   endpoint:

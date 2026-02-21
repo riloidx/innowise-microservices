@@ -73,7 +73,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldGetCardById() throws Exception {
-        mockMvc.perform(get("/cards/{id}", activeCard.getId())
+        mockMvc.perform(get("/users/cards/{id}", activeCard.getId())
                         .headers(createAuthHeaders())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -86,7 +86,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldFindAllCardsForUser() throws Exception {
-        mockMvc.perform(get("/cards/user/{userId}", testUser.getId())
+        mockMvc.perform(get("/users/cards/user/{userId}", testUser.getId())
                         .headers(createAuthHeaders())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -97,7 +97,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldFindAllCardsWithNoFilter() throws Exception {
-        mockMvc.perform(get("/cards")
+        mockMvc.perform(get("/users/cards")
                         .headers(createAuthHeaders())
                         .param("page", "0")
                         .param("size", "10")
@@ -108,7 +108,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldFindAllActiveCardsFilter() throws Exception {
-        mockMvc.perform(get("/cards")
+        mockMvc.perform(get("/users/cards")
                         .headers(createAuthHeaders())
                         .param("active", "true")
                         .contentType(APPLICATION_JSON))
@@ -121,7 +121,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
     void shouldFindAllCardsExpiresAfterFilter() throws Exception {
         LocalDate futureDate = LocalDate.now().minusDays(1);
 
-        mockMvc.perform(get("/cards")
+        mockMvc.perform(get("/users/cards")
                         .headers(createAuthHeaders())
                         .param("expires_after", futureDate.toString())
                         .contentType(APPLICATION_JSON))
@@ -139,7 +139,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
         String jsonRequest = objectMapper.writeValueAsString(createDto);
 
-        mockMvc.perform(post("/cards")
+        mockMvc.perform(post("/users/cards")
                         .headers(createAuthHeaders())
                         .contentType(APPLICATION_JSON)
                         .content(jsonRequest))
@@ -159,7 +159,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
         String jsonRequest = objectMapper.writeValueAsString(updateDto);
 
-        mockMvc.perform(put("/cards/{id}", activeCard.getId())
+        mockMvc.perform(put("/users/cards/{id}", activeCard.getId())
                         .headers(createAuthHeaders())
                         .contentType(APPLICATION_JSON)
                         .content(jsonRequest))
@@ -169,7 +169,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldActivateCard() throws Exception {
-        mockMvc.perform(patch("/cards/{id}/activate", inactiveCard.getId())
+        mockMvc.perform(patch("/users/cards/{id}/activate", inactiveCard.getId())
                         .headers(createAuthHeaders())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -179,7 +179,7 @@ class PaymentCardIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void shouldDeactivateCard() throws Exception {
-        mockMvc.perform(patch("/cards/{id}/deactivate", activeCard.getId())
+        mockMvc.perform(patch("/users/cards/{id}/deactivate", activeCard.getId())
                         .headers(createAuthHeaders())
                         .contentType(APPLICATION_JSON))
                 .andExpect(status().isOk())
