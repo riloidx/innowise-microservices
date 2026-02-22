@@ -31,5 +31,7 @@ public interface OrderService {
 
     Mono<OrderFullResponseDto> update(long id, OrderUpdateDto order);
 
+    void updateStatusFromPayment(long orderId, String paymentStatus);
+
     Mono<OrderResponseDto> delete(long id);
 }

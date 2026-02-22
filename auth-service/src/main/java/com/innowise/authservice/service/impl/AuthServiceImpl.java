@@ -9,19 +9,18 @@ import com.innowise.authservice.dto.response.RefreshResponseDto;
 import com.innowise.authservice.dto.response.UserResponseDto;
 import com.innowise.authservice.dto.response.ValidateResponseDto;
 import com.innowise.authservice.entity.Credential;
-import com.innowise.authservice.enums.Role;
 import com.innowise.authservice.exception.CredentialAlreadyExistsException;
 import com.innowise.authservice.exception.InvalidCredentialsException;
 import com.innowise.authservice.jwt.JwtUtil;
 import com.innowise.authservice.repository.CredentialRepository;
 import com.innowise.authservice.service.api.AuthService;
+import com.innowise.authservice.service.api.CredentialService;
 import com.innowise.authservice.service.api.UserFeignClient;
 import com.innowise.authservice.user.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -29,77 +28,44 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthServiceImpl implements AuthService {
     private final CredentialRepository credentialRepo;
     private final UserDetailsServiceImpl userDetailsService;
+    private final CredentialService credentialService;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final UserFeignClient userFeignClient;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public AuthResponseDto register(RegistrationDto registrationDto) {
         log.info("Starting user registration for login: {}", registrationDto.getLogin());
-        
-        if (credentialRepo.findCredentialByLogin(registrationDto.getLogin()).isPresent()) {
-            log.warn("Registration failed: login already exists - {}", registrationDto.getLogin());
+
+        if (credentialRepo.existsByLogin(registrationDto.getLogin())) {
             throw new CredentialAlreadyExistsException("login", registrationDto.getLogin());
         }
 
+        UserResponseDto savedUser = createUserInRemoteService(registrationDto);
+
+        try {
+            return credentialService.createCredentials(registrationDto, savedUser.getId());
+        } catch (Exception e) {
+            log.error("Failed to save credentials for userId: {}. Initiating compensation...", savedUser.getId());
+            compensateUserCreation(savedUser.getId());
+            throw new RuntimeException("Registration failed: " + e.getMessage());
+        }
+    }
+
+    private UserResponseDto createUserInRemoteService(RegistrationDto registrationDto) {
         UserCreateDto userCreateDto = UserCreateDto.builder()
                 .name(registrationDto.getName())
                 .email(registrationDto.getEmail())
                 .surname(registrationDto.getSurname())
                 .birthDate(registrationDto.getBirthDate())
                 .build();
-
-        UserResponseDto savedUser;
-        try {
-            log.debug("Creating user in user-service for login: {}", registrationDto.getLogin());
-            savedUser = userFeignClient.createUser(userCreateDto);
-            log.debug("User created successfully with ID: {}", savedUser.getId());
-        } catch (Exception e) {
-            throw new RuntimeException("External service error: registration aborted");
-        }
-
-        try {
-            Credential credential = Credential.builder()
-                    .userId(savedUser.getId())
-                    .login(registrationDto.getLogin())
-                    .passwordHash(passwordEncoder.encode(registrationDto.getPassword()))
-                    .role(Role.USER)
-                    .build();
-
-            credentialRepo.save(credential);
-            log.debug("Credentials saved for user ID: {}", savedUser.getId());
-
-            CustomUserDetails userDetails = new CustomUserDetails(credential);
-            String accessToken = jwtUtil.generateAccessToken(userDetails);
-            String refreshToken = jwtUtil.generateRefreshToken(userDetails);
-
-            log.info("User registration completed successfully for login: {}", registrationDto.getLogin());
-            return new AuthResponseDto(credential.getLogin(), accessToken, refreshToken);
-        } catch (Exception e) {
-            log.error("Registration failed for login: {}. Error: {}", registrationDto.getLogin(), e.getMessage());
-
-            if (savedUser != null) {
-                try {
-                    log.debug("Rolling back user creation for user ID: {}", savedUser.getId());
-                    userFeignClient.deleteUser(savedUser.getId());
-                } catch (Exception ignored) {
-                    log.warn("Failed to rollback user creation for user ID: {}", savedUser.getId());
-                }
-            }
-            throw new RuntimeException("Registration failed: " + e.getMessage(), e);
-
-        } catch (Exception e) {
-            compensateUserCreation(savedUser.getId());
-
-            throw new RuntimeException("Registration failed due to internal error. User data rolled back.");
-        }
+        return userFeignClient.createUser(userCreateDto);
     }
 
     @Override
     public AuthResponseDto login(LoginDto loginDto) {
         log.info("User login attempt for login: {}", loginDto.getLogin());
-        
+
         Credential credential = ((CustomUserDetails) userDetailsService.
                 loadUserByUsername(loginDto.getLogin())).credential();
 
@@ -117,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public RefreshResponseDto refresh(RefreshRequestDto refreshRequestDto) {
         log.info("Token refresh attempt");
-        
+
         String refreshToken = refreshRequestDto.getRefreshToken();
         String username = jwtUtil.extractUsername(refreshToken, true);
         log.debug("Refreshing token for user: {}", username);
