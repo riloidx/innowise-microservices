@@ -106,7 +106,6 @@ public class OrderServiceImpl implements OrderService {
         validateOrderNotDeleted(curOrder);
         orderMapper.updateEntityFromDto(orderUpdateDto, curOrder);
         processOrderItems(curOrder, orderUpdateDto.items());
-        Order savedOrder = orderRepo.save(curOrder);
 
         orderRepo.save(curOrder);
         log.info("Order updated successfully with ID: {}", id);
@@ -118,7 +117,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public void updateStatusFromPayment(long orderId, String paymentStatus) {
         log.info("Updating order status from payment - Order ID: {}, Payment status: {}", orderId, paymentStatus);
-        
+
         Order order = findById(orderId);
 
         if (paymentStatus.equals("SUCCESS")) {
@@ -145,7 +144,7 @@ public class OrderServiceImpl implements OrderService {
 
     private void processOrderItems(Order order, List<OrderItemDto> itemsDto) {
         log.debug("Processing {} order items", itemsDto.size());
-        
+
         order.getOrderItems().clear();
         BigDecimal totalPrice = BigDecimal.ZERO;
 
