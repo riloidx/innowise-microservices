@@ -1,62 +1,52 @@
 spring:
   application:
-    name: innowise-api-gateway
+    name: gateway-app
 
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins:
-              - "http://localhost:5174"
-              - "http://app.local"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - PATCH
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
-      routes:
-        - id: user-service-route
-          uri: ${USER_SERVICE_URL}
-          predicates:
-            - Path=/api/users/**
-          filters:
-            - Authentication
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: ["http://localhost:5174", "http://app.local"]
+                allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+                allowedHeaders: "*"
+                allowCredentials: true
+                maxAge: 3600
+          routes:
+            - id: user-service-route
+              uri: ${USER_SERVICE_URL}
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - Authentication
 
-        - id: auth-service-route
-          uri: ${AUTH_SERVICE_URL}
-          predicates:
-            - Path=/api/auth/**
+            - id: auth-service-route
+              uri: ${AUTH_SERVICE_URL}
+              predicates:
+                - Path=/api/auth/**
 
-        - id: order-service-route
-          uri: ${ORDER_SERVICE_URL}
-          predicates:
-            - Path=/api/orders/**
+            - id: order-service-route
+              uri: ${ORDER_SERVICE_URL}
+              predicates:
+                - Path=/api/orders/**
+              filters:
+                - Authentication
 
-        - id: payment-service-route
-          uri: ${PAYMENT_SERVICE_URL}
-          predicates:
-            - Path=/api/payments/**
-          filters:
-            - Authentication
-
-management:
-  endpoint:
-    health:
-      probes:
-        enabled: true
+            - id: payment-service-route
+              uri: ${PAYMENT_SERVICE_URL}
+              predicates:
+                - Path=/api/payments/**
+              filters:
+                - Authentication
 
 jwt:
   access-key: ${JWT_ACCESS_KEY}
   refresh-key: ${JWT_REFRESH_KEY}
 
 management:
-  otlp:
+  zipkin:
     tracing:
       endpoint: ${TEMPO_URL}
   endpoints:
@@ -68,19 +58,12 @@ management:
       probes:
         enabled: true
       show-details: always
-
   tracing:
     sampling:
       probability: 1.0
-    propagation:
-      type: b3
-
   metrics:
     tags:
       application: ${spring.application.name}
-    distribution:
-      percentiles-histogram:
-        http.server.requests: true
 
 logging:
   pattern:

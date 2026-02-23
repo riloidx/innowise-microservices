@@ -13,7 +13,7 @@ spec:
         app: gateway-app
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/path: "/api/actuator/prometheus"
+        prometheus.io/path: "/actuator/prometheus"
         prometheus.io/port: "8080"
     spec:
       containers:
@@ -24,7 +24,10 @@ spec:
             - containerPort: 8080
           env:
             - name: TEMPO_URL
-              value: "http://tempo:4317"
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: TEMPO_URL
             - name: USER_SERVICE_URL
               valueFrom:
                 configMapKeyRef:

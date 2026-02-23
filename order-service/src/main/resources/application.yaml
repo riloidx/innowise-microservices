@@ -1,6 +1,6 @@
 spring:
   application:
-    name: innowise-order-service
+    name: order-app
 
   datasource:
     username: ${DB_USERNAME:postgres}
@@ -9,6 +9,8 @@ spring:
 
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+    listener:
+      observation-enabled: true
     consumer:
       group-id: order-group
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
@@ -35,9 +37,9 @@ integration:
     url: ${USER_SERVICE_URL:http://localhost:8080}
 
 management:
-  otlp:
+  zipkin:
     tracing:
-      endpoint: ${TEMPO_URL}
+      endpoint: ${TEMPO_URL:http://localhost:9411/api/v2/spans}
   endpoints:
     web:
       exposure:

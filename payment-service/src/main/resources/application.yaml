@@ -1,9 +1,11 @@
 spring:
   application:
-    name: payment-service
+    name: payment-app
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    template:
+      observation-enabled: true
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
@@ -15,9 +17,9 @@ api:
   random-number-url: ${RANDOM_NUMBER_API_URL:https://csrng.net/csrng/csrng.php?min=1&max=100}
 
 management:
-  otlp:
+  zipkin:
     tracing:
-      endpoint: ${TEMPO_URL}
+      endpoint: ${TEMPO_URL:http://localhost:9411/api/v2/spans}
   endpoints:
     web:
       exposure:

@@ -4,7 +4,7 @@ server:
 
 spring:
   application:
-    name: innowise-auth-service
+    name: auth-app
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/innowise_auth_service_db}
@@ -23,7 +23,7 @@ integration:
   user-service-url: ${USER_SERVICE_URL}
 
 management:
-  otlp:
+  zipkin:
     tracing:
       endpoint: ${TEMPO_URL}
   endpoints:

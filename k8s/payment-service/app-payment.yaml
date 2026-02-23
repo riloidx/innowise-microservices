@@ -24,7 +24,10 @@ spec:
             - containerPort: 8080
           env:
             - name: TEMPO_URL
-              value: "http://tempo:4317"
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: TEMPO_URL
             - name: SPRING_DATA_MONGODB_URI
               valueFrom:
                 secretKeyRef:

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: innowise-user-service
+    name: user-app
 
 user:
   card:
@@ -25,9 +25,9 @@ server:
     context-path: /api
 
 management:
-  otlp:
+  zipkin:
     tracing:
-      endpoint: ${TEMPO_URL}
+      endpoint: ${TEMPO_URL:http://localhost:9411/api/v2/spans}
   endpoints:
     web:
       exposure:
