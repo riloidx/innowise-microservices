@@ -9,6 +9,7 @@ on:
     branches: [ main ]
     paths:
       - 'user-service/**'
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: ${{ github.repository }}/user-service

@@ -9,6 +9,7 @@ on:
     branches: [ main ]
     paths:
       - 'payment-service/**'
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: ${{ github.repository }}/payment-service
