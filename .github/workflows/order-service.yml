@@ -1,17 +1,17 @@
-name: Payment Service CI
+name: Order Service CI
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'payment-service/**'
+      - 'order-service/**'
   pull_request:
     branches: [ main ]
     paths:
-      - 'payment-service/**'
+      - 'order-service/**'
 
 env:
-  IMAGE_NAME: ${{ github.repository }}/payment-service
+  IMAGE_NAME: ${{ github.repository }}/order-service
   REGISTRY: ghcr.io
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./payment-service
+        working-directory: ./order-service
 
     steps:
       - name: Checkout repository
@@ -45,7 +45,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('payment-service/**/*.gradle*', 'payment-service/**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('order-service/**/*.gradle*', 'order-service/**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -88,8 +88,8 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
-          context: ./payment-service
-          file: ./payment-service/Dockerfile
+          context: ./order-service
+          file: ./order-service/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
