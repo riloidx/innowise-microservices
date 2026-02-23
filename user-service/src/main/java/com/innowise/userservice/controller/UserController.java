@@ -23,7 +23,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #id")
+    @PreAuthorize("hasRole('ADMIN') or (authentication.principal instanceof T(org.springframework.security.core.userdetails.UserDetails) and authentication.principal.id == #id)")
     public ResponseEntity<UserResponseDto> getById(@PathVariable Long id) {
         UserResponseDto dto = userService.findDtoById(id);
 

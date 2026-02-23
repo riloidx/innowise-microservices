@@ -8,16 +8,15 @@ import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.List;
 
 public interface OrderService {
 
-    Mono<OrderFullResponseDto> create(OrderCreateDto orderCreateDto);
+    OrderFullResponseDto create(OrderCreateDto orderCreateDto);
 
-    Mono<Page<OrderFullResponseDto>> findAll(Pageable pageable,
+    Page<OrderFullResponseDto> findAll(Pageable pageable,
                                              OrderStatus orderStatus,
                                              Boolean deleted,
                                              LocalDate createdAfter,
@@ -25,13 +24,13 @@ public interface OrderService {
 
     Order findById(long id);
 
-    Mono<OrderFullResponseDto> findDtoById(long id);
+    OrderFullResponseDto findDtoById(long id);
 
-    Mono<List<OrderFullResponseDto>> findByUserId(long userId);
+    List<OrderFullResponseDto> findByUserId(long userId);
 
-    Mono<OrderFullResponseDto> update(long id, OrderUpdateDto order);
+    OrderFullResponseDto update(long id, OrderUpdateDto order);
 
     void updateStatusFromPayment(long orderId, String paymentStatus);
 
-    Mono<OrderResponseDto> delete(long id);
+    OrderResponseDto delete(long id);
 }

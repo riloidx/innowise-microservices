@@ -26,13 +26,13 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<OrderFullResponseDto> create(@RequestBody @Valid OrderCreateDto orderCreateDto) {
+    public OrderFullResponseDto create(@RequestBody @Valid OrderCreateDto orderCreateDto) {
         return orderService.create(orderCreateDto);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public Mono<Page<OrderFullResponseDto>> findAll(
+    public Page<OrderFullResponseDto> findAll(
             Pageable pageable,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(required = false) Boolean deleted,
@@ -50,19 +50,19 @@ public class OrderController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Mono<OrderFullResponseDto> findById(@PathVariable Long id) {
+    public OrderFullResponseDto findById(@PathVariable Long id) {
         return orderService.findDtoById(id);
     }
 
     @GetMapping("/user/{userId}")
     @ResponseStatus(HttpStatus.OK)
-    public Mono<List<OrderFullResponseDto>> findByUserId(@PathVariable Long userId) {
+    public List<OrderFullResponseDto> findByUserId(@PathVariable Long userId) {
         return orderService.findByUserId(userId);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Mono<OrderFullResponseDto> update(
+    public OrderFullResponseDto update(
             @PathVariable Long id,
             @RequestBody @Valid OrderUpdateDto orderUpdateDto
     ) {
@@ -71,7 +71,7 @@ public class OrderController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Mono<OrderResponseDto> delete(@PathVariable Long id) {
+    public OrderResponseDto delete(@PathVariable Long id) {
         return orderService.delete(id);
     }
 }

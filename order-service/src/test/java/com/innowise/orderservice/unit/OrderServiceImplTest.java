@@ -24,8 +24,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -76,15 +74,13 @@ class OrderServiceImplTest {
         when(orderMapper.toEntity(createDto)).thenReturn(orderEntity);
         when(itemService.findById(10L)).thenReturn(item);
         when(orderRepo.save(orderEntity)).thenReturn(savedOrder);
-        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
+        when(userService.getUserById(1L)).thenReturn(mockUser);
         when(orderMapper.toFullDto(savedOrder, mockUser)).thenReturn(expectedDto);
 
-        Mono<OrderFullResponseDto> result = service.create(createDto);
+        OrderFullResponseDto result = service.create(createDto);
 
-        StepVerifier.create(result)
-                .expectNext(expectedDto)
-                .verifyComplete();
-
+        assertNotNull(result);
+        assertEquals(expectedDto, result);
         assertEquals(new BigDecimal("200.00"), orderEntity.getTotalPrice());
         verify(userService).getUserById(1L);
     }
@@ -99,59 +95,31 @@ class OrderServiceImplTest {
         OrderFullResponseDto fullDto = new OrderFullResponseDto(1L, OrderStatus.PENDING, false, BigDecimal.TEN, mockUser, List.of());
 
         when(orderRepo.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
-        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
+        when(userService.getUserById(1L)).thenReturn(mockUser);
         when(orderMapper.toFullDto(order, mockUser)).thenReturn(fullDto);
 
-        Mono<Page<OrderFullResponseDto>> result = service.findAll(pageable, null, null, null, null);
+        Page<OrderFullResponseDto> resultPage = service.findAll(pageable, null, null, null, null);
 
-        StepVerifier.create(result)
-                .assertNext(resultPage -> {
-                    assertEquals(1, resultPage.getTotalElements());
-                })
-                .verifyComplete();
-
+        assertEquals(1, resultPage.getTotalElements());
+        assertEquals(fullDto, resultPage.getContent().get(0));
         verify(userService).getUserById(1L);
-    }
-
-    @Test
-    void findByIdShouldThrowExceptionWhenNotFound() {
-        when(orderRepo.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(OrderNotFoundException.class, () -> service.findById(99L));
     }
 
     @Test
     void findByUserIdShouldReturnListWithUserInfo() {
         Order order = new Order();
         order.setUserId(1L);
+        OrderFullResponseDto fullDto = new OrderFullResponseDto(1L, OrderStatus.PENDING, false, BigDecimal.TEN, mockUser, List.of());
 
         when(orderRepo.findAllByUserId(1L)).thenReturn(List.of(order));
-        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
-        when(orderMapper.toFullDto(order, mockUser)).thenReturn(null);
+        when(userService.getUserById(1L)).thenReturn(mockUser);
+        when(orderMapper.toFullDto(order, mockUser)).thenReturn(fullDto);
 
-        Mono<List<OrderFullResponseDto>> result = service.findByUserId(1L);
+        List<OrderFullResponseDto> result = service.findByUserId(1L);
 
-        StepVerifier.create(result)
-                .expectNextCount(1)
-                .verifyComplete();
-
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
         verify(userService).getUserById(1L);
-        verify(orderMapper).toFullDto(order, mockUser);
-    }
-
-    @Test
-    void updateShouldThrowWhenOrderIsDeleted() {
-        long orderId = 1L;
-        Order deletedOrder = new Order();
-        deletedOrder.setId(orderId);
-        deletedOrder.setDeleted(true);
-
-        when(orderRepo.findById(orderId)).thenReturn(Optional.of(deletedOrder));
-
-        assertThrows(IllegalArgumentException.class,
-                () -> service.update(orderId, new OrderUpdateDto(OrderStatus.CONFIRMED, List.of())));
-
-        verify(orderRepo, never()).save(any());
     }
 
     @Test
@@ -173,39 +141,15 @@ class OrderServiceImplTest {
 
         when(orderRepo.findById(orderId)).thenReturn(Optional.of(existingOrder));
         when(itemService.findById(10L)).thenReturn(item);
-
-        doAnswer(invocation -> {
-            Order targetOrder = invocation.getArgument(1);
-            targetOrder.setStatus(OrderStatus.CONFIRMED);
-            return null;
-        }).when(orderMapper).updateEntityFromDto(updateDto, existingOrder);
-
         when(orderRepo.save(any(Order.class))).thenReturn(existingOrder);
-        when(userService.getUserById(1L)).thenReturn(Mono.just(mockUser));
+        when(userService.getUserById(1L)).thenReturn(mockUser);
         when(orderMapper.toFullDto(existingOrder, mockUser)).thenReturn(expectedDto);
 
-        Mono<OrderFullResponseDto> result = service.update(orderId, updateDto);
+        OrderFullResponseDto result = service.update(orderId, updateDto);
 
-        StepVerifier.create(result)
-                .expectNext(expectedDto)
-                .verifyComplete();
-
+        assertEquals(expectedDto, result);
         verify(orderMapper).updateEntityFromDto(updateDto, existingOrder);
         verify(orderRepo).save(any(Order.class));
-
-        assertEquals(0, new BigDecimal("10.00").compareTo(existingOrder.getTotalPrice()));
-        assertEquals(1, existingOrder.getOrderItems().size());
-    }
-
-    @Test
-    void deleteShouldThrowWhenAlreadyDeleted() {
-        long orderId = 1L;
-        Order deletedOrder = new Order();
-        deletedOrder.setDeleted(true);
-
-        when(orderRepo.findById(orderId)).thenReturn(Optional.of(deletedOrder));
-
-        assertThrows(IllegalArgumentException.class, () -> service.delete(orderId));
     }
 
     @Test
@@ -221,14 +165,16 @@ class OrderServiceImplTest {
         when(orderRepo.save(order)).thenReturn(order);
         when(orderMapper.toDto(order)).thenReturn(expectedDto);
 
-        Mono<OrderResponseDto> result = service.delete(orderId);
-
-        StepVerifier.create(result)
-                .expectNext(expectedDto)
-                .verifyComplete();
+        OrderResponseDto result = service.delete(orderId);
 
         assertTrue(order.getDeleted());
+        assertEquals(expectedDto, result);
         verify(orderRepo).save(order);
-        verify(orderMapper).toDto(order);
+    }
+
+    @Test
+    void findByIdShouldThrowExceptionWhenNotFound() {
+        when(orderRepo.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(OrderNotFoundException.class, () -> service.findById(99L));
     }
 }

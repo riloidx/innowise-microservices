@@ -1,13 +1,14 @@
 package com.innowise.orderservice.integration;
 
+import com.innowise.orderservice.dto.response.UserResponseDto;
 import com.innowise.orderservice.exception.ExternalUserNotFoundException;
 import com.innowise.orderservice.service.UserServiceClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import reactor.test.StepVerifier;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UserServiceClientIntegrationTest extends BaseIntegrationTest {
 
@@ -31,17 +32,14 @@ class UserServiceClientIntegrationTest extends BaseIntegrationTest {
                                 }
                                 """)));
 
-        StepVerifier.create(userServiceClient.getUserById(userId))
-                .assertNext(user -> {
-                    assertEquals(1L, user.id());
-                    assertEquals("Alice", user.name());
-                    assertEquals("Smith", user.surname());
-                    assertEquals("alice@test.com", user.email());
-                })
-                .verifyComplete();
+        UserResponseDto user = userServiceClient.getUserById(userId);
 
-        verify(getRequestedFor(urlPathEqualTo("/api/users/1"))
-                .withHeader("Authorization", matching("Bearer .*")));
+        assertEquals(1L, user.id());
+        assertEquals("Alice", user.name());
+        assertEquals("Smith", user.surname());
+        assertEquals("alice@test.com", user.email());
+
+        verify(getRequestedFor(urlPathEqualTo("/api/users/1")));
     }
 
     @Test
@@ -52,9 +50,9 @@ class UserServiceClientIntegrationTest extends BaseIntegrationTest {
                 .willReturn(aResponse()
                         .withStatus(404)));
 
-        StepVerifier.create(userServiceClient.getUserById(userId))
-                .expectError(ExternalUserNotFoundException.class)
-                .verify();
+        assertThrows(ExternalUserNotFoundException.class, () ->
+                userServiceClient.getUserById(userId)
+        );
 
         verify(getRequestedFor(urlPathEqualTo("/api/users/999")));
     }

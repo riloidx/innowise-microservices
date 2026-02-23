@@ -44,9 +44,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public Mono<OrderFullResponseDto> create(OrderCreateDto orderCreateDto) {
+    public OrderFullResponseDto create(OrderCreateDto orderCreateDto) {
         Order order = orderMapper.toEntity(orderCreateDto);
         processOrderItems(order, orderCreateDto.items());
+
         Order savedOrder = orderRepo.save(order);
         log.info("Order created successfully with ID: {}", savedOrder.getId());
 
@@ -55,91 +56,72 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Mono<Page<OrderFullResponseDto>> findAll(Pageable pageable,
-                                                    OrderStatus orderStatus,
-                                                    Boolean deleted,
-                                                    LocalDate createdAfter,
-                                                    LocalDate createdBefore) {
+    public Page<OrderFullResponseDto> findAll(Pageable pageable,
+                                              OrderStatus orderStatus,
+                                              Boolean deleted,
+                                              LocalDate createdAfter,
+                                              LocalDate createdBefore) {
         Specification<Order> spec = prepareSpecification(orderStatus, deleted, createdAfter, createdBefore);
         Page<Order> ordersPage = orderRepo.findAll(spec, pageable);
 
-        return Flux.fromIterable(ordersPage.getContent())
-                .flatMap(this::convertToFullDto)
-                .collectList()
-                .map(list -> new PageImpl<>(list, pageable, ordersPage.getTotalElements()));
+        return ordersPage.map(this::convertToFullDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Order findById(long id) {
-        log.debug("Finding order by ID: {}", id);
-        return orderRepo.findById(id).
-                orElseThrow(() -> {
-                    log.warn("Order not found with ID: {}", id);
-                    return new OrderNotFoundException("id", String.valueOf(id));
-                });
+        return orderRepo.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException("id", String.valueOf(id)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Mono<OrderFullResponseDto> findDtoById(long id) {
-        return Mono.fromCallable(() -> findById(id))
-                .flatMap(this::convertToFullDto);
+    public OrderFullResponseDto findDtoById(long id) {
+        return convertToFullDto(findById(id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Mono<List<OrderFullResponseDto>> findByUserId(long userId) {
+    public List<OrderFullResponseDto> findByUserId(long userId) {
+        log.debug("Fetching all orders for user ID: {}", userId);
+
         List<Order> orders = orderRepo.findAllByUserId(userId);
 
-        return userService.getUserById(userId)
-                .map(userDto -> orders.stream()
-                        .map(order -> orderMapper.toFullDto(order, userDto))
-                        .toList()
-                );
+        var userDto = userService.getUserById(userId);
+
+        return orders.stream()
+                .map(order -> orderMapper.toFullDto(order, userDto))
+                .toList();
     }
 
     @Override
     @Transactional
-    public Mono<OrderFullResponseDto> update(long id, OrderUpdateDto orderUpdateDto) {
+    public OrderFullResponseDto update(long id, OrderUpdateDto orderUpdateDto) {
         Order curOrder = findById(id);
         validateOrderNotDeleted(curOrder);
+
         orderMapper.updateEntityFromDto(orderUpdateDto, curOrder);
         processOrderItems(curOrder, orderUpdateDto.items());
 
-        orderRepo.save(curOrder);
-        log.info("Order updated successfully with ID: {}", id);
-
-        return convertToFullDto(curOrder);
+        return convertToFullDto(orderRepo.save(curOrder));
     }
 
     @Override
     @Transactional
     public void updateStatusFromPayment(long orderId, String paymentStatus) {
-        log.info("Updating order status from payment - Order ID: {}, Payment status: {}", orderId, paymentStatus);
-
         Order order = findById(orderId);
-
-        if (paymentStatus.equals("SUCCESS")) {
-            order.setStatus(OrderStatus.CONFIRMED);
-            log.info("Order {} status changed to CONFIRMED", orderId);
-        } else {
-            order.setStatus(OrderStatus.CANCELED);
-            log.info("Order {} status changed to CANCELED", orderId);
-        }
-
+        order.setStatus("SUCCESS".equals(paymentStatus) ? OrderStatus.CONFIRMED : OrderStatus.CANCELED);
         orderRepo.save(order);
     }
 
     @Override
     @Transactional
-    public Mono<OrderResponseDto> delete(long id) {
+    public OrderResponseDto delete(long id) {
         Order curOrder = findById(id);
         validateOrderNotDeleted(curOrder);
-        curOrder.setDeleted(true);
-        log.info("Order marked as deleted with ID: {}", id);
 
-        return Mono.fromCallable(() -> orderMapper.toDto(orderRepo.save(curOrder)));
+        curOrder.setDeleted(true);
+        return orderMapper.toDto(orderRepo.save(curOrder));
     }
 
     private void processOrderItems(Order order, List<OrderItemDto> itemsDto) {
@@ -163,9 +145,9 @@ public class OrderServiceImpl implements OrderService {
         log.debug("Order total price calculated: {}", totalPrice);
     }
 
-    private Mono<OrderFullResponseDto> convertToFullDto(Order order) {
-        return userService.getUserById(order.getUserId())
-                .map(userDto -> orderMapper.toFullDto(order, userDto));
+    private OrderFullResponseDto convertToFullDto(Order order) {
+        var userDto = userService.getUserById(order.getUserId());
+        return orderMapper.toFullDto(order, userDto);
     }
 
     private void validateOrderNotDeleted(Order order) {
