@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260223-1000-init-schema
+      author: matvey
+      changes:
+        - mongo:
+            mongo: "db.createCollection('payments')"
+
+  - changeSet:
+      id: 20260223-1000-add-indexes
+      author: matvey
+      changes:
+        - mongo:
+            mongo: "db.payments.createIndex({ 'order_id': 1 }, { name: 'idx_order_id' })"
+        - mongo:
+            mongo: "db.payments.createIndex({ 'user_id': 1 }, { name: 'idx_user_id' })"

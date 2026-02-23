@@ -20,11 +20,9 @@ public class Payment {
     private String id;
 
     @Field("order_id")
-    @Indexed
     private Long orderId;
 
     @Field("user_id")
-    @Indexed
     private Long userId;
 
     @Field("status")

@@ -18,14 +18,14 @@ public interface PaymentRepository extends MongoRepository<Payment, String> {
     List<Payment> findByStatus(PaymentStatus status);
 
     @Aggregation(pipeline = {
-            "{ $match: { userId: ?0, timestamp: { $gte: ?1, $lte: ?2 }, status: 'SUCCESS' } }",
-            "{ $group: { _id: null, total: { $sum: '$payment_amount' } } }"
+            "{ $match: { 'user_id': ?0, 'timestamp': { $gte: ?1, $lte: ?2 }, 'status': 'SUCCESS' } }",
+            "{ $group: { _id: null, total: { $sum: { $toDecimal: '$payment_amount' } } } }"
     })
     TotalSum sumAmountByUserIdAndDateRange(Long userId, Instant start, Instant end);
 
     @Aggregation(pipeline = {
-            "{ $match: { timestamp: { $gte: ?0, $lte: ?1 }, status: 'SUCCESS' } }",
-            "{ $group: { _id: null, total: { $sum: '$payment_amount' } } }"
+            "{ $match: { 'timestamp': { $gte: ?0, $lte: ?1 }, 'status': 'SUCCESS' } }",
+            "{ $group: { _id: null, total: { $sum: { $toDecimal: '$payment_amount' } } } }"
     })
     TotalSum sumAmountForDateRange(Instant start, Instant end);
 
