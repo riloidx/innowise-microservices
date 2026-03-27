@@ -424,22 +424,6 @@ The project includes:
 - Integration tests with Testcontainers (PostgreSQL, MongoDB, Kafka)
 - Contract tests with Spring Cloud Contract
 
-## 📝 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 👤 Author
-
-**[Your Name]**
-- GitHub: [@your-username](https://github.com/your-username)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/your-profile)
-- Email: your.email@example.com
-
-## 🙏 Acknowledgments
-
-- Spring Boot and Spring Cloud teams for excellent frameworks
-- The open-source community for amazing tools and libraries
-- [Innowise Group](https://innowise.com/) for project inspiration
 
 ---
 
