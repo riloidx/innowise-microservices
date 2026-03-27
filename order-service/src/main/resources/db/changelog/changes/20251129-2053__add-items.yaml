@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: create-items-table
-      author: innowise-dev
+      author: matvey
   - changeSet:
       id: 20251128-2023-add-items
       author: matvey

@@ -15,7 +15,7 @@ spring:
       group-id: order-group
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.value.default.type: "com.innowise.orderservice.kafka.event.PaymentEvent"
+        spring.json.value.default.type: "com.riloidx.orderservice.kafka.event.PaymentEvent"
         spring.json.use.type.headers: false
         spring.json.trusted.packages: "*"
 

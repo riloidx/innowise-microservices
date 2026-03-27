@@ -7,9 +7,9 @@ ext {
     springCloudVersion = "2025.0.0"
 }
 
-group = 'com.innowise'
+group = 'com.riloidx'
 version = '0.0.1-SNAPSHOT'
-description = 'innowise-order-service'
+description = 'riloidx-order-service'
 
 java {
     toolchain {
